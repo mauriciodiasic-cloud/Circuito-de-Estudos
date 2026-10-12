@@ -146,7 +146,6 @@ if supabase and st.session_state["user"] is None:
           getattr(current_session.user, "email", "Concursando").split("@")[0],
       )
 
-      # Carregar dados salvos do usuário na nuvem
       prefs = carregar_preferencias_usuario(current_session.user.id)
       if prefs:
         st.session_state.disciplinas = prefs.get(
@@ -232,7 +231,6 @@ else:
           )
           st.session_state["nome_preferido"] = nome_usuario
 
-          # Carregar preferências logo após o login
           prefs = carregar_preferencias_usuario(res.user.id)
           if prefs:
             st.session_state.disciplinas = prefs.get(
@@ -482,9 +480,9 @@ elif menu_principal == "Flashcards e Recorrências":
 else:
   st.subheader("Gerenciar Disciplinas e Ordem do Circuito")
   st.markdown(
-      "Adicione novas matérias ou altere a ordem em que aparecem no circuito"
-      " usando os botões **Subir** e **Descer**. Todas as alterações são salvas"
-      " automaticamente na sua conta."
+      "Adicione novas matérias, remova ou **reordene** as disciplinas"
+      " selecionando a nova sequência desejada. Tudo é guardado"
+      " automaticamente na nuvem."
   )
 
   with st.expander("Adicionar Nova Disciplina", expanded=False):
@@ -502,48 +500,42 @@ else:
         st.warning("Esta disciplina já consta no circuito.")
 
   st.markdown("---")
-  st.subheader("Ordem Atual das Disciplinas")
+  st.subheader("🔄 Reordenar Disciplinas Rapidamente")
+  st.markdown(
+      "Clique nos itens abaixo na ordem exata em que deseja estudá-los ou"
+      " remova os que não quiser:"
+  )
 
-  if not st.session_state.disciplinas:
-    st.warning("Nenhuma disciplina cadastrada.")
-  else:
-    for idx, d in enumerate(st.session_state.disciplinas):
-      c_pos, c_nome, c_subir, c_descer, c_remover = st.columns(
-          [1, 4, 1.5, 1.5, 1.5]
-      )
+  nova_ordem = st.multiselect(
+      "Sequência do Circuito:",
+      options=st.session_state.disciplinas,
+      default=st.session_state.disciplinas,
+  )
 
-      c_pos.markdown(f"**#{idx + 1}**")
-      c_nome.write(f"**{d}**")
-
-      if c_subir.button("Subir ⬆️", key=f"up_{idx}"):
-        if idx > 0:
-          st.session_state.disciplinas[idx], st.session_state.disciplinas[
-              idx - 1
-          ] = (
-              st.session_state.disciplinas[idx - 1],
-              st.session_state.disciplinas[idx],
-          )
-          salvar_preferencias_usuario()
-          st.rerun()
-
-      if c_descer.button("Descer ⬇️", key=f"down_{idx}"):
-        if idx < len(st.session_state.disciplinas) - 1:
-          st.session_state.disciplinas[idx], st.session_state.disciplinas[
-              idx + 1
-          ] = (
-              st.session_state.disciplinas[idx + 1],
-              st.session_state.disciplinas[idx],
-          )
-          salvar_preferencias_usuario()
-          st.rerun()
-
-      if c_remover.button("Remover 🗑️", key=f"rem_{idx}"):
-        st.session_state.disciplinas.pop(idx)
-        if st.session_state.disciplinas:
-          st.session_state.indice_atual = st.session_state.indice_atual % len(
-              st.session_state.disciplinas
-          )
-        else:
-          st.session_state.indice_atual = 0
+  col_btn1, col_btn2 = st.columns(2)
+  with col_btn1:
+    if st.button("Salvar Nova Ordem 🎯"):
+      if len(nova_ordem) > 0:
+        st.session_state.disciplinas = nova_ordem
+        st.session_state.indice_atual = 0
         salvar_preferencias_usuario()
+        st.success("Nova ordem salva com sucesso na sua conta!")
         st.rerun()
+      else:
+        st.error("O circuito precisa ter pelo menos uma disciplina.")
+
+  with col_btn2:
+    if st.button("Restaurar Padrão 🔄"):
+      st.session_state.disciplinas = DISCIPLINAS_PADRAO.copy()
+      st.session_state.indice_atual = 0
+      salvar_preferencias_usuario()
+      st.success("Ordem padrão restaurada e salva!")
+      st.rerun()
+
+  st.markdown("---")
+  st.subheader("📋 Lista Atual de Disciplinas")
+  for idx, d in enumerate(st.session_state.disciplinas):
+    st.text(
+        f"#{idx + 1} — {d} (Série:"
+        f" {st.session_state.series_concluidas.get(d, 1)})"
+    )
