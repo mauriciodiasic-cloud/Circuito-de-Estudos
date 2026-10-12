@@ -440,3 +440,137 @@ elif menu_principal == "Painel de Desempenho":
 
 # ==========================================
 # TELA: FLASHCARDS E RECORRÊNCIAS
+# ==========================================
+elif menu_principal == "Flashcards e Recorrências":
+  st.subheader(f"Caderno de Erros — {nome_aluno}")
+
+  if st.session_state["user"] is None:
+    st.warning("Faça login na barra lateral para salvar flashcards na nuvem.")
+  else:
+    with st.expander("Adicionar Novo Flashcard", expanded=True):
+      with st.form("form_fc"):
+        disc_escolhida = st.selectbox(
+            "Disciplina:", st.session_state.disciplinas
+        )
+        assunto_livre = st.text_input("Assunto:")
+        comentario_erro = st.text_area("Fundamento / Comentário do Erro:")
+
+        enviar_fc = st.form_submit_button("Salvar Flashcard")
+
+      if enviar_fc:
+        if assunto_livre.strip() and comentario_erro.strip() and supabase:
+          try:
+            dados_fc = {
+                "user_id": st.session_state["user"].id,
+                "disciplina": disc_escolhida,
+                "assunto": assunto_livre.strip(),
+                "pergunta_erro": assunto_livre.strip(),
+                "resposta_fundamento": comentario_erro,
+            }
+            supabase.table("flashcards_erros").insert(dados_fc).execute()
+            st.success("Flashcard registrado com sucesso!")
+            st.rerun()
+          except Exception as e:
+            st.error(f"Erro ao salvar flashcard: {e}")
+
+    st.markdown("---")
+    st.subheader("📚 Meus Flashcards Salvos")
+    try:
+      res_fc = (
+          supabase.table("flashcards_erros")
+          .select("*")
+          .eq("user_id", st.session_state["user"].id)
+          .execute()
+      )
+      lista_fc = res_fc.data
+      if not lista_fc:
+        st.info("Nenhum flashcard cadastrado ainda.")
+      else:
+        for item in lista_fc:
+          with st.expander(
+              f"[{item.get('disciplina')}] {item.get('assunto')}"
+          ):
+            st.write(
+                f"**Fundamento / Comentário:**"
+                f" {item.get('resposta_fundamento')}"
+            )
+    except Exception:
+      st.info("Caderno de erros pronto para uso.")
+
+
+# ==========================================
+# TELA: GERENCIAR DISCIPLINAS
+# ==========================================
+elif menu_principal == "Gerenciar Disciplinas":
+  st.subheader("Gerenciar Disciplinas e Ordem do Circuito")
+  st.markdown(
+      "Adicione novas matérias, remova ou digite o número da nova posição"
+      " desejada para cada disciplina. As alterações são salvas e atualizadas"
+      " automaticamente."
+  )
+
+  with st.expander("Adicionar Nova Disciplina", expanded=False):
+    nova_disc = st.text_input("Nome da disciplina:")
+    if st.button("Adicionar") and nova_disc.strip():
+      nova_limpa = nova_disc.strip()
+      if nova_limpa not in st.session_state.disciplinas:
+        st.session_state.disciplinas.append(nova_limpa)
+        if nova_limpa not in st.session_state.series_concluidas:
+          st.session_state.series_concluidas[nova_limpa] = 1
+        salvar_preferencias_usuario()
+        st.success("Disciplina adicionada e salva com sucesso!")
+        st.rerun()
+      else:
+        st.warning("Esta disciplina já consta no circuito.")
+
+  st.markdown("---")
+  st.subheader("📋 Reordenar por Número de Posição")
+
+  if not st.session_state.disciplinas:
+    st.warning("Nenhuma disciplina cadastrada.")
+  else:
+    with st.form("form_reordenar"):
+      novas_posicoes = {}
+      for idx, d in enumerate(st.session_state.disciplinas):
+        col_nome, col_input = st.columns([3, 1])
+        col_nome.write(f"**{d}**")
+        novas_posicoes[d] = col_input.number_input(
+            f"Pos {d}",
+            min_value=1,
+            max_value=len(st.session_state.disciplinas),
+            value=idx + 1,
+            step=1,
+            key=f"pos_{d}",
+            label_visibility="collapsed",
+        )
+
+      btn_atualizar_ordem = st.form_submit_button(
+          "Atualizar Ordem do Circuito 🎯"
+      )
+
+      if btn_atualizar_ordem:
+        disciplinas_ordenadas = sorted(
+            st.session_state.disciplinas, key=lambda x: novas_posicoes[x]
+        )
+        st.session_state.disciplinas = disciplinas_ordenadas
+        st.session_state.indice_atual = 0
+        salvar_preferencias_usuario()
+        st.success("Ordem atualizada e salva com sucesso na nuvem!")
+        st.rerun()
+
+    st.markdown("---")
+    st.subheader("🗑️ Remover Disciplinas")
+    for idx, d in enumerate(list(st.session_state.disciplinas)):
+      col_d_nome, col_d_btn = st.columns([4, 1])
+      col_d_nome.write(f"• {d}")
+      if col_d_btn.button("Excluir", key=f"rem_{idx}"):
+        st.session_state.disciplinas.remove(d)
+        if st.session_state.disciplinas:
+          st.session_state.indice_atual = st.session_state.indice_atual % len(
+              st.session_state.disciplinas
+          )
+        else:
+          st.session_state.indice_atual = 0
+        salvar_preferencias_usuario()
+        st.success(f"'{d}' removida com sucesso!")
+        st.rerun()
