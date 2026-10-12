@@ -282,3 +282,113 @@ elif menu_principal == "Executar Circuito":
       with col1:
         feitas = st.number_input(
             "Questoes Feitas", min_value=1, value=15, step=1
+        )
+      with col2:
+        acertos = st.number_input(
+            "Questoes Acertadas", min_value=0, max_value=feitas, value=12, step=1
+        )
+
+      enviar_bloco = st.form_submit_button("Concluir Serie e Avancar")
+
+      if enviar_bloco:
+        aproveitamento_bloco = (acertos / feitas) * 100
+        st.success(
+            f"Parabens! Aproveitamento de **{aproveitamento_bloco:.0f}%**!"
+        )
+
+        if st.session_state["user"] and supabase:
+          try:
+            dados = {
+                "user_id": st.session_state["user"].id,
+                "disciplina": disc_atual,
+                "feitas": feitas,
+                "acertos": acertos,
+            }
+            supabase.table("historico_estudos").insert(dados).execute()
+          except Exception as e:
+            st.error(f"Erro ao salvar dados: {e}")
+
+        st.session_state.series_concluidas[disc_atual] = serie_atual + 1
+        st.session_state.indice_atual = (idx + 1) % len(
+            st.session_state.disciplinas
+        )
+        st.rerun()
+
+    st.markdown("---")
+    st.markdown("### Sequencia do Circuito")
+    for i, d in enumerate(st.session_state.disciplinas):
+      marcador = (
+          "[ESTUDAR AGORA]"
+          if i
+          == (st.session_state.indice_atual % len(st.session_state.disciplinas))
+          else "[OK]"
+      )
+      st.text(
+          f"{marcador} {d} — Serie"
+          f" {st.session_state.series_concluidas.get(d, 1)}"
+      )
+
+
+# ==========================================
+# TELA: PAINEL DE DESEMPENHO
+# ==========================================
+elif menu_principal == "Painel de Desempenho":
+  st.subheader(f"Painel de Evolucao — {nome_aluno}")
+
+  if st.session_state["user"] is None:
+    st.warning("Faça login na barra lateral para carregar seu historico.")
+  else:
+    if supabase:
+      try:
+        res = (
+            supabase.table("historico_estudos")
+            .select("*")
+            .eq("user_id", st.session_state["user"].id)
+            .execute()
+        )
+        dados = res.data
+
+        if not dados:
+          st.info("Nenhum bloco registrado ainda.")
+        else:
+          df = pd.DataFrame(dados)
+          total_feitas = df["feitas"].sum()
+          total_acertos = df["acertos"].sum()
+          aproveitamento_geral = (
+              (total_acertos / total_feitas) * 100 if total_feitas > 0 else 0
+          )
+
+          c1, c2, c3 = st.columns(3)
+          c1.metric("Questoes Resolvidas", f"{total_feitas:,}")
+          c2.metric("Total de Acertos", f"{total_acertos:,}")
+          c3.metric("Rendimento Geral", f"{aproveitamento_geral:.1f}%")
+
+          st.markdown("---")
+          st.subheader("Aproveitamento Por Disciplina")
+          resumo_disc = (
+              df.groupby("disciplina")[["feitas", "acertos"]]
+              .sum()
+              .reset_index()
+          )
+          resumo_disc["Aproveitamento (%)"] = (
+              resumo_disc["acertos"] / resumo_disc["feitas"] * 100
+          ).round(1)
+          st.dataframe(resumo_disc, use_container_width=True)
+
+      except Exception as e:
+        st.error(f"Erro ao carregar painel: {e}")
+
+
+# ==========================================
+# TELA: FLASHCARDS E RECORRENCIAS
+# ==========================================
+elif menu_principal == "Flashcards e Recorrencias":
+  st.subheader(f"Caderno de Erros — {nome_aluno}")
+
+  if st.session_state["user"] is None:
+    st.warning("Faça login na barra lateral para salvar flashcards na nuvem.")
+  else:
+    with st.expander("Adicionar Novo Flashcard", expanded=False):
+      with st.form("form_fc"):
+        disc_escolhida = st.selectbox(
+            "Disciplina:", st.session_state.disciplinas
