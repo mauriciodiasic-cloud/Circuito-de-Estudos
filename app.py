@@ -104,6 +104,9 @@ if "series_concluidas" not in st.session_state:
 if "user" not in st.session_state:
     st.session_state["user"] = None
 
+if "nome_preferido" not in st.session_state:
+    st.session_state["nome_preferido"] = "Concursando"
+
 # Ajuste preventivo de índice para evitar erros de limites
 if st.session_state.disciplinas:
     st.session_state.indice_atual = st.session_state.indice_atual % len(st.session_state.disciplinas)
@@ -114,6 +117,7 @@ st.sidebar.title("📌 Menu Principal")
 menu_principal = st.sidebar.radio(
     "Navegue pelas telas:", 
     [
+        "🏠 Início",
         "🏋️‍♂️ Executar Circuito", 
         "📊 Painel de Desempenho", 
         "🧠 Flashcards & Recorrências", 
@@ -151,6 +155,7 @@ else:
                                 }
                             }
                         })
+                        st.session_state["nome_preferido"] = nome_input.strip()
                         st.sidebar.success("Conta criada com sucesso! Faça login para continuar.")
                     except Exception as e:
                         st.sidebar.error(f"Erro no cadastro: {e}")
@@ -164,9 +169,9 @@ else:
                     res = supabase.auth.sign_in_with_password({"email": email_input, "password": senha_input})
                     st.session_state["user"] = res.user
                     
-                    # Recupera o nome salvo nas métricas do usuário
                     user_metadata = getattr(res.user, "user_metadata", {}) or {}
                     nome_usuario = user_metadata.get("full_name", email_input.split("@")[0])
+                    st.session_state["nome_preferido"] = nome_usuario
                     
                     st.sidebar.success(f"Bem-vindo(a) de volta, {nome_usuario}! 🎯")
                     st.rerun()
@@ -187,24 +192,24 @@ else:
                 else:
                     st.sidebar.error("Digite o seu e-mail cadastrado.")
     else:
-        # Obter nome do usuário logado
         user_metadata = getattr(st.session_state["user"], "user_metadata", {}) or {}
-        nome_exibicao = user_metadata.get("full_name", st.session_state['user'].email.split("@")[0])
+        nome_exibicao = user_metadata.get("full_name", st.session_state.get("nome_preferido", "Concursando"))
         
         st.sidebar.success(f"⚡ Conectado como: **{nome_exibicao}**")
         if st.sidebar.button("Sair da Conta 👋"):
             supabase.auth.sign_out()
             st.session_state["user"] = None
+            st.session_state["nome_preferido"] = "Concursando"
             st.rerun()
 
-# --- OBTER NOME DO USUÁRIO PARA MENSAGENS PERSONALIZADAS ---
+# --- OBTER NOME DO USUÁRIO ---
 if st.session_state["user"]:
     user_meta = getattr(st.session_state["user"], "user_metadata", {}) or {}
-    nome_aluno = user_meta.get("full_name", "Futuro(a) Defensor(a)")
+    nome_aluno = user_meta.get("full_name", st.session_state.get("nome_preferido", "Futuro(a) Defensor(a)"))
 else:
-    nome_aluno = "Concursando"
+    nome_aluno = st.session_state.get("nome_preferido", "Concursando")
 
-# --- FRASES MOTIVACIONAIS PERSONALIZADAS COM O NOME ---
+# --- FRASES MOTIVACIONAIS PERSONALIZADAS ---
 FRASES_MOTIVACIONAIS = [
     f"🔥 Olá, {nome_aluno}! Cada questão resolvida é um passo a mais rumo ao seu cargo!",
     f"🚀 Bora estudar, {nome_aluno}! A constância vence qualquer desafio.",
@@ -213,215 +218,28 @@ FRASES_MOTIVACIONAIS = [
     f"🏆 Força nos estudos, {nome_aluno}! Sua aprovação está sendo construída agora."
 ]
 
-# --- CABEÇALHO PRINCIPAL ANIMADO ---
-st.title(f"⚡ Circuito de Estudos do(a) {nome_aluno}")
-st.caption(f"💬 *{random.choice(FRASES_MOTIVACIONAIS)}*")
-
 
 # ==========================================
-# TELA 1: EXECUTAR CIRCUITO
+# TELA INITIAL: 🏠 INÍCIO
 # ==========================================
-if menu_principal == "🏋️‍♂️ Executar Circuito":
-    if st.session_state["user"] is None:
-        st.warning("⚠️ Você está estudando no modo visitante. Faça login na barra lateral para salvar seu progresso permanentemente na nuvem!")
-
-    if st.session_state.disciplinas:
-        idx = st.session_state.indice_atual % len(st.session_state.disciplinas)
-        disc_atual = st.session_state.disciplinas[idx]
-        serie_atual = st.session_state.series_concluidas.get(disc_atual, 1)
-
-        st.info(f"🎯 **Matéria / Bloco Atual:** `{disc_atual}`  |  🔥 **Série:** `{serie_atual}`")
-
-        with st.form("form_bloco"):
-            st.subheader("📝 Registrar Bloco de Questões Resolvidas")
-            col1, col2 = st.columns(2)
-            with col1:
-                feitas = st.number_input("Questões Feitas", min_value=1, value=15, step=1)
-            with col2:
-                acertos = st.number_input("Questões Acertadas", min_value=0, max_value=feitas, value=12, step=1)
-
-            enviar_bloco = st.form_submit_button("✅ Concluir Série e Avançar! 🚀")
-
-            if enviar_bloco:
-                aproveitamento_bloco = (acertos / feitas) * 100
-                
-                if aproveitamento_bloco >= 80:
-                    st.balloons()
-                    st.success(f"🎉 SENSACIONAL, {nome_aluno}! Aproveitamento de **{aproveitamento_bloco:.0f}%**! Você está voando!")
-                elif aproveitamento_bloco >= 60:
-                    st.success(f"👏 Muito bem, {nome_aluno}! **{aproveitamento_bloco:.0f}%** de aproveitamento. Mantenha o ritmo!")
-                else:
-                    st.warning(f"💪 **{aproveitamento_bloco:.0f}%** de aproveitamento. É hora de registrar os erros nos flashcards e ajustar, {nome_aluno}!")
-
-                if st.session_state["user"] and supabase:
-                    try:
-                        dados = {
-                            "user_id": st.session_state["user"].id,
-                            "disciplina": disc_atual,
-                            "feitas": feitas,
-                            "acertos": acertos
-                        }
-                        supabase.table("historico_estudos").insert(dados).execute()
-                    except Exception as e:
-                        st.error(f"Erro ao salvar dados: {e}")
-
-                st.session_state.series_concluidas[disc_atual] = serie_atual + 1
-                st.session_state.indice_atual = (idx + 1) % len(st.session_state.disciplinas)
-                st.rerun()
-
-        st.markdown("---")
-        st.markdown("### 📋 Sequência do Seu Circuito")
-        for i, d in enumerate(st.session_state.disciplinas):
-            marcador = "🔥 [ESTUDAR AGORA]" if i == (st.session_state.indice_atual % len(st.session_state.disciplinas)) else "✅"
-            st.text(f"{marcador} {d} — Série {st.session_state.series_concluidas.get(d, 1)}")
-
-    else:
-        st.warning("Adicione disciplinas na aba de configurações para iniciar seu circuito de estudos!")
-
-
-# ==========================================
-# TELA 2: PAINEL DE DESEMPENHO
-# ==========================================
-elif menu_principal == "📊 Painel de Desempenho":
-    st.subheader(f"📈 Painel de Evolução — {nome_aluno}")
-
-    if st.session_state["user"] is None:
-        st.warning("⚠️ Faça login na barra lateral para carregar seu painel com histórico completo.")
-    else:
-        if supabase:
-            try:
-                res = supabase.table("historico_estudos").select("*").eq("user_id", st.session_state["user"].id).execute()
-                dados = res.data
-
-                if not dados:
-                    st.info(f"📭 Nenhum bloco registrado ainda, {nome_aluno}. Complete sua primeira série na tela do circuito!")
-                else:
-                    df = pd.DataFrame(dados)
-                    
-                    total_feitas = df["feitas"].sum()
-                    total_acertos = df["acertos"].sum()
-                    aproveitamento_geral = (total_acertos / total_feitas) * 100 if total_feitas > 0 else 0
-
-                    c1, c2, c3 = st.columns(3)
-                    c1.metric("📚 Questões Resolvidas", f"{total_feitas:,}")
-                    c2.metric("🎯 Total de Acertos", f"{total_acertos:,}")
-                    c3.metric("🔥 Rendimento Geral", f"{aproveitamento_geral:.1f}%")
-
-                    st.progress(min(int(aproveitamento_geral), 100))
-
-                    st.markdown("---")
-                    st.subheader("📊 Aproveitamento Por Disciplina")
-
-                    resumo_disc = df.groupby("disciplina")[["feitas", "acertos"]].sum().reset_index()
-                    resumo_disc["Aproveitamento (%)"] = (resumo_disc["acertos"] / resumo_disc["feitas"] * 100).round(1)
-                    resumo_disc = resumo_disc.sort_values(by="Aproveitamento (%)", ascending=False)
-
-                    st.dataframe(resumo_disc, use_container_width=True)
-
-                    st.markdown("### 💡 Diagnóstico de Desempenho")
-                    melhor = resumo_disc.iloc[0] if not resumo_disc.empty else None
-                    pior = resumo_disc.iloc[-1] if not resumo_disc.empty else None
-
-                    if melhor is not None and pior is not None:
-                        col_a, col_b = st.columns(2)
-                        with col_a:
-                            st.success(f"🏆 **Seu Maior Domínio:** `{melhor['disciplina']}`\n\nExcelente aproveitamento de **{melhor['Aproveitamento (%)']}%**, {nome_aluno}!")
-                        with col_b:
-                            st.error(f"⚠️ **Ponto de Atenção:** `{pior['disciplina']}`\n\nAproveitamento de **{pior['Aproveitamento (%)']}%**. Reforce os estudos e flashcards desta matéria!")
-
-            except Exception as e:
-                st.error(f"Erro ao carregar seu painel: {e}")
-
-
-# ==========================================
-# TELA 3: FLASHCARDS & RECORRÊNCIAS
-# ==========================================
-elif menu_principal == "🧠 Flashcards & Recorrências":
-    st.subheader(f"🧠 Caderno de Erros do(a) {nome_aluno}")
-    st.markdown("Cadastre seus erros em **3 níveis** e acompanhe os temas mais recorrentes para revisões direcionadas.")
-
-    if st.session_state["user"] is None:
-        st.warning("⚠️ Faça login na barra lateral para salvar seus flashcards com segurança na nuvem.")
-    else:
-        with st.expander("➕ Adicionar Novo Flashcard / Caderno de Erros", expanded=False):
-            with st.form("form_fc"):
-                disc_escolhida = st.selectbox("1️⃣ Nível - Disciplina:", st.session_state.disciplinas)
-                assunto_livre = st.text_input("2️⃣ Nível - Assunto:", placeholder="Ex: Prisão Preventiva, ITD, Usucapião Familiar...")
-                comentario_erro = st.text_area("3️⃣ Nível - Comentário / Fundamento do Erro:", placeholder="O que pegou na questão? Qual foi a pegadinha, o dispositivo legal ou o entendimento do STJ/STF?")
-                
-                if st.form_submit_button("Salvar Flashcard 💾"):
-                    if assunto_livre.strip() and comentario_erro.strip() and supabase:
-                        try:
-                            dados_fc = {
-                                "user_id": st.session_state["user"].id,
-                                "disciplina": disc_escolhida,
-                                "assunto": assunto_livre.strip(),
-                                "pergunta_erro": assunto_livre.strip(),
-                                "resposta_fundamento": comentario_erro
-                            }
-                            supabase.table("flashcards_erros").insert(dados_fc).execute()
-                            st.success(f"🧠 Flashcard registrado com sucesso, {nome_aluno}!")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Erro ao salvar flashcard: {e}")
-
-        st.markdown("---")
-
-        if supabase:
-            try:
-                res_fc = supabase.table("flashcards_erros").select("*").eq("user_id", st.session_state["user"].id).execute()
-                lista_fc = res_fc.data
-
-                if lista_fc:
-                    df_fc = pd.DataFrame(lista_fc)
-                    
-                    st.subheader("🎯 Radar de Assuntos Mais Recorrentes")
-                    if "assunto" in df_fc.columns:
-                        df_fc["assunto_clean"] = df_fc["assunto"].fillna("Geral").str.strip().str.title()
-                        recorrencia = df_fc.groupby(["disciplina", "assunto_clean"]).size().reset_index(name="Frequência")
-                        recorrencia = recorrencia.sort_values(by="Frequência", ascending=False)
-
-                        for _, row_g in recorrencia.head(3).iterrows():
-                            st.warning(f"🔥 **{row_g['assunto_clean']}** ({row_g['disciplina']}) — Erro registrado `{row_g['Frequência']}x`. {nome_aluno}, reforço recomendado na lei seca e jurisprudência desse tema!")
-
-                    st.markdown("---")
-                    st.subheader("📚 Seus Flashcards Cadastrados")
-                    
-                    filtro_disc = st.selectbox("Filtrar por Disciplina:", ["Todas"] + list(df_fc["disciplina"].unique()))
-                    df_filtrado = df_fc if filtro_disc == "Todas" else df_fc[df_fc["disciplina"] == filtro_disc]
-
-                    for idx, row in df_filtrado.iterrows():
-                        assunto_txt = row.get('assunto', 'Geral')
-                        with st.expander(f"📌 [{row['disciplina']}] — Assunto: {assunto_txt}"):
-                            st.write(f"**Comentário / Fundamento do Erro:**\n\n> {row['resposta_fundamento']}")
-                            if st.button("🗑️ Excluir Flashcard", key=f"del_{row['id']}"):
-                                supabase.table("flashcards_erros").delete().eq("id", row['id']).execute()
-                                st.rerun()
-                else:
-                    st.info(f"📭 Nenhum flashcard cadastrado ainda, {nome_aluno}. Use o formulário acima para registrar seus erros!")
-
-            except Exception as e:
-                st.error(f"Erro ao carregar flashcards: {e}")
-
-
-# ==========================================
-# TELA 4: GERENCIAR DISCIPLINAS
-# ==========================================
-else:
-    st.subheader("⚙️ Configurar Disciplinas do Circuito")
+if menu_principal == "🏠 Início":
+    st.title(f"👋 Olá, {nome_aluno}!")
+    st.caption(f"💬 *{random.choice(FRASES_MOTIVACIONAIS)}*")
     
-    nova_disc = st.text_input("Adicionar nova disciplina jurídica:")
-    if st.button("Adicionar ao Circuito ✨") and nova_disc:
-        if nova_disc not in st.session_state.disciplinas:
-            st.session_state.disciplinas.append(nova_disc)
-            st.session_state.series_concluidas[nova_disc] = 1
-            st.success(f"'{nova_disc}' adicionada ao circuito!")
-            st.rerun()
-
-    st.markdown("### Disciplinas Ativas:")
-    for d in st.session_state.disciplinas:
-        col1, col2 = st.columns([4, 1])
-        col1.write(f"• **{d}** (Série Atual: {st.session_state.series_concluidas.get(d, 1)})")
-        if col2.button("Remover", key=f"rem_{d}"):
-            st.session_state.disciplinas.remove(d)
-            st.rerun()
+    st.markdown("---")
+    
+    col_bem_vindo, col_config = st.columns([2, 1])
+    
+    with col_bem_vindo:
+        st.subheader("🚀 Bem-vindo(a) ao seu Circuito de Estudos!")
+        st.write("""
+        Esta plataforma foi desenvolvida para potencializar a sua preparação para concursos públicos de alto nível:
+        
+        * 🏋️‍♂️ **Circuito Rotativo:** Mantenha um ritmo dinâmico e equilibrado passando por todas as disciplinas.
+        * 📊 **Painel Analítico:** Acompanhe a sua porcentagem de acertos geral e por matéria em tempo real.
+        * 🧠 **Caderno de Erros Inteligente:** Registre seus erros em 3 níveis (Disciplina, Assunto e Comentário) para identificar padrões e gargalos de estudo.
+        """)
+        
+    with col_config:
+        st.subheader("👤 Como prefere ser chamado(a)?")
+        novo_nome = st.text
