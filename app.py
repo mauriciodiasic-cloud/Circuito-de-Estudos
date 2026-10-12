@@ -69,16 +69,16 @@ st.markdown(
 # --- CONFIGURAÇÃO DO SUPABASE ---
 SUPABASE_URL = "https://hweawyyqnzavrhejaotv.supabase.co"
 SUPABASE_KEY = (
-    st.secrets.get("sb_publishable_DN77kvZt5m7HgRDK8SMgUQ_PAlIRHjZ", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3ZWF3eXlxbnphdnJoZWphb3R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3NjgwMDQsImV4cCI6MjEwNzM0NDAwNH0.2mgHfTLJCy8fkId_w5yP6EFDP-cYWM0wM6ZpvHrIhpk")
-    if hasattr(st, "secrets")
-    else "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3ZWF3eXlxbnphdnJoZWphb3R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3NjgwMDQsImV4cCI6MjEwNzM0NDAwNH0.2mgHfTLJCy8fkId_w5yP6EFDP-cYWM0wM6ZpvHrIhpk"
+    st.secrets.get("SUPABASE_KEY")
+    if hasattr(st, "secrets") and "SUPABASE_KEY" in st.secrets
+    else "sb_publishable_DN77kvZt5m7HgRDK8SMgUQ_PAlIRHjZ"
 )
 
 
 @st.cache_resource
 def init_supabase():
   try:
-    if SUPABASE_KEY == "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3ZWF3eXlxbnphdnJoZWphb3R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3NjgwMDQsImV4cCI6MjEwNzM0NDAwNH0.2mgHfTLJCy8fkId_w5yP6EFDP-cYWM0wM6ZpvHrIhpk" or not SUPABASE_KEY:
+    if not SUPABASE_KEY:
       return None
     return create_client(SUPABASE_URL, SUPABASE_KEY)
   except Exception:
@@ -120,7 +120,6 @@ if "nome_preferido" not in st.session_state:
 # --- RECUPERAÇÃO AUTOMÁTICA DE SESSÃO DO SUPABASE ---
 if supabase and st.session_state["user"] is None:
   try:
-    # Tenta recuperar a sessão ativa salva no cliente Supabase
     current_session = supabase.auth.get_session()
     if current_session and getattr(current_session, "user", None):
       st.session_state["user"] = current_session.user
@@ -556,175 +555,4 @@ elif menu_principal == "🧠 Flashcards & Recorrências":
                   f"🧠 Flashcard registrado com sucesso, {nome_aluno}!"
               )
               st.rerun()
-            except Exception as e:
-              st.error(f"Erro ao salvar flashcard: {e}")
-
-    st.markdown("---")
-
-    if supabase:
-      try:
-        res_fc = (
-            supabase.table("flashcards_erros")
-            .select("*")
-            .eq("user_id", st.session_state["user"].id)
-            .execute()
-        )
-        lista_fc = res_fc.data
-
-        if lista_fc:
-          df_fc = pd.DataFrame(lista_fc)
-
-          st.subheader("🎯 Radar de Assuntos Mais Recorrentes")
-          if "assunto" in df_fc.columns:
-            df_fc["assunto_clean"] = (
-                df_fc["assunto"].fillna("Geral").str.strip().str.title()
-            )
-            recorrencia = (
-                df_fc.groupby(["disciplina", "assunto_clean"])
-                .size()
-                .reset_index(name="Frequência")
-            )
-            recorrencia = recorrencia.sort_values(
-                by="Frequência", ascending=False
-            )
-
-            for _, row_g in recorrencia.head(3).iterrows():
-              st.warning(
-                  f"🔥 **{row_g['assunto_clean']}** ({row_g['disciplina']}) —"
-                  f" Erro registrado `{row_g['Frequência']}x`."
-                  f" {nome_aluno}, reforço recomendado na lei seca e"
-                  " jurisprudência desse tema!"
-              )
-
-          st.markdown("---")
-          st.subheader("📚 Seus Flashcards Cadastrados")
-
-          filtro_disc = st.selectbox(
-              "Filtrar por Disciplina:",
-              ["Todas"] + list(df_fc["disciplina"].unique()),
-          )
-          df_filtrado = (
-              df_fc
-              if filtro_disc == "Todas"
-              else df_fc[df_fc["disciplina"] == filtro_disc]
-          )
-
-          for idx, row in df_filtrado.iterrows():
-            assunto_txt = row.get("assunto", "Geral")
-            with st.expander(
-                f"📌 [{row['disciplina']}] — Assunto: {assunto_txt}"
-            ):
-              st.write(
-                  "**Comentário / Fundamento do Erro:**\n\n>"
-                  f" {row['resposta_fundamento']}"
-              )
-              if st.button("🗑️ Excluir Flashcard", key=f"del_{row['id']}"):
-                supabase.table("flashcards_erros").delete().eq(
-                    "id", row["id"]
-                ).execute()
-                st.rerun()
-        else:
-          st.info(
-              f"📭 Nenhum flashcard cadastrado ainda, {nome_aluno}. Use o"
-              " formulário acima para registrar seus erros!"
-          )
-
-      except Exception as e:
-        st.error(f"Erro ao carregar flashcards: {e}")
-
-
-# ==========================================
-# TELA 4: GERENCIAR DISCIPLINAS E ORDEM
-# ==========================================
-else:
-  st.subheader("⚙️ Configurar Disciplinas e Ordem do Circuito")
-  st.markdown(
-      "Personalize quais disciplinas fazem parte do seu circuito e a **ordem"
-      " exata** em que você quer estudá-las."
-  )
-
-  with st.expander(
-      "➕ Adicionar Nova Disciplina ao Circuito", expanded=False
-  ):
-    nova_disc = st.text_input("Nome da disciplina jurídica:")
-    if st.button("Adicionar ao Circuito ✨") and nova_disc.strip():
-      nova_disc_clean = nova_disc.strip()
-      if nova_disc_clean not in st.session_state.disciplinas:
-        st.session_state.disciplinas.append(nova_disc_clean)
-        st.session_state.series_concluidas[nova_disc_clean] = 1
-        st.success(f"'{nova_disc_clean}' adicionada ao circuito!")
-        st.rerun()
-      else:
-        st.warning("Esta disciplina já está no seu circuito.")
-
-  st.markdown("---")
-
-  st.subheader("🔄 Organizar Ordem de Estudo do Circuito")
-  st.info(
-      "Use os botões **⬆️ Subir** e **⬇️ Descer** para definir a sequência do"
-      " seu treino rotativo."
-  )
-
-  if not st.session_state.disciplinas:
-    st.warning("Nenhuma disciplina cadastrada.")
-  else:
-    for idx, d in enumerate(st.session_state.disciplinas):
-      c_ordem, c_nome, c_subir, c_descer, c_remover = st.columns(
-          [1, 4, 1.5, 1.5, 1.5]
-      )
-
-      c_ordem.markdown(f"**#{idx + 1}**")
-      c_nome.write(
-          f"**{d}** (Série: {st.session_state.series_concluidas.get(d, 1)})"
-      )
-
-      if c_subir.button("⬆️ Subir", key=f"up_{idx}"):
-        if idx > 0:
-          st.session_state.disciplinas[idx], st.session_state.disciplinas[
-              idx - 1
-          ] = (
-              st.session_state.disciplinas[idx - 1],
-              st.session_state.disciplinas[idx],
-          )
-          st.rerun()
-
-      if c_descer.button("⬇️ Descer", key=f"down_{idx}"):
-        if idx < len(st.session_state.disciplinas) - 1:
-          st.session_state.disciplinas[idx], st.session_state.disciplinas[
-              idx + 1
-          ] = (
-              st.session_state.disciplinas[idx + 1],
-              st.session_state.disciplinas[idx],
-          )
-          st.rerun()
-
-      if c_remover.button("🗑️", key=f"rem_{idx}"):
-        st.session_state.disciplinas.pop(idx)
-        if st.session_state.disciplinas:
-          st.session_state.indice_atual = st.session_state.indice_atual % len(
-              st.session_state.disciplinas
-          )
-        else:
-          st.session_state.indice_atual = 0
-        st.rerun()
-
-  st.markdown("---")
-
-  if len(st.session_state.disciplinas) > 1:
-    st.markdown("### 🔀 Reordenação Rápida Multiselect")
-    nova_ordem_selecionada = st.multiselect(
-        "Selecione todas as disciplinas na nova ordem desejada:",
-        options=st.session_state.disciplinas,
-        default=st.session_state.disciplinas,
-    )
-
-    if st.button("Aplicar Nova Ordem Selecionada 🎯"):
-      if len(nova_ordem_selecionada) == len(st.session_state.disciplinas):
-        st.session_state.disciplinas = nova_ordem_selecionada
-        st.session_state.indice_atual = 0
-        st.success("Nova ordem aplicada com sucesso no circuito!")
-        st.rerun()
-      else:
-        st.error(
-            "Selecione todas as disciplinas para redefinir a ordem completa."
-        )
+            except Exception as e
