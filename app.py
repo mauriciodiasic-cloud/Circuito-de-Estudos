@@ -323,4 +323,76 @@ if menu_principal == "Início":
 # TELA: EXECUTAR CIRCUITO
 # ==========================================
 elif menu_principal == "Executar Circuito":
-  st.
+  st.title(f"Circuito de Estudos - {nome_aluno}")
+
+  if st.session_state["user"] is None:
+    st.warning(
+        "Você está no modo visitante. Faça login para salvar seu progresso na"
+        " nuvem!"
+    )
+
+  if st.session_state.disciplinas:
+    idx = st.session_state.indice_atual % len(st.session_state.disciplinas)
+    disc_atual = st.session_state.disciplinas[idx]
+    serie_atual = st.session_state.series_concluidas.get(disc_atual, 1)
+
+    st.info(f"Matéria Atual: `{disc_atual}` | Série: `{serie_atual}`")
+
+    with st.form("form_bloco"):
+      st.subheader("Registrar Bloco de Questões Resolvidas")
+      col1, col2 = st.columns(2)
+      with col1:
+        feitas = st.number_input(
+            "Questões Feitas", min_value=1, value=15, step=1
+        )
+      with col2:
+        acertos = st.number_input(
+            "Questões Acertadas", min_value=0, max_value=feitas, value=12, step=1
+        )
+
+      enviar_bloco = st.form_submit_button("Concluir Série e Avançar")
+
+    if enviar_bloco:
+      aproveitamento_bloco = (acertos / feitas) * 100
+      st.success(f"Parabéns! Aproveitamento de **{aproveitamento_bloco:.0f}%**!")
+
+      if st.session_state["user"] and supabase:
+        try:
+          dados = {
+              "user_id": st.session_state["user"].id,
+              "disciplina": disc_atual,
+              "feitas": feitas,
+              "acertos": acertos,
+              "created_at": datetime.now().isoformat(),
+          }
+          supabase.table("historico_estudos").insert(dados).execute()
+        except Exception as e:
+          st.error(f"Erro ao salvar dados: {e}")
+
+      st.session_state.series_concluidas[disc_atual] = serie_atual + 1
+      st.session_state.indice_atual = (idx + 1) % len(
+          st.session_state.disciplinas
+      )
+      salvar_preferencias_usuario()
+      st.rerun()
+
+    st.markdown("---")
+    st.markdown("### Sequência do Circuito")
+    for i, d in enumerate(st.session_state.disciplinas):
+      marcador = (
+          "[ESTUDAR AGORA]"
+          if i
+          == (st.session_state.indice_atual % len(st.session_state.disciplinas))
+          else "[OK]"
+      )
+      st.text(
+          f"{marcador} {d} — Série"
+          f" {st.session_state.series_concluidas.get(d, 1)}"
+      )
+
+
+# ==========================================
+# TELA: PAINEL DE DESEMPENHO
+# ==========================================
+elif menu_principal == "Painel de Desempenho":
+  st.subheader(f
