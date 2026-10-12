@@ -247,4 +247,80 @@ else:
           st.sidebar.success(f"Bem-vindo(a) de volta, {nome_usuario}!")
           st.rerun()
         except Exception:
-          st.sidebar.error("E-mail ou senha incorretos.
+          st.sidebar.error("E-mail ou senha incorretos. Tente novamente.")
+
+    elif aba_auth == "Esqueci a Senha":
+      st.sidebar.markdown("Redefinição de Senha")
+      email_recuperacao = st.sidebar.text_input("E-mail cadastrado")
+
+      if st.sidebar.button("Enviar E-mail de Recuperação"):
+        if email_recuperacao.strip():
+          try:
+            supabase.auth.reset_password_for_email(email_recuperacao.strip())
+            st.sidebar.success("Enviamos um link de redefinição para o e-mail!")
+          except Exception as e:
+            st.sidebar.error(f"Erro ao enviar e-mail: {e}")
+        else:
+          st.sidebar.error("Digite o seu e-mail cadastrado.")
+  else:
+    st.sidebar.success(f"Conectado como: **{nome_aluno}**")
+    if st.sidebar.button("Sair da Conta"):
+      supabase.auth.sign_out()
+      st.session_state["user"] = None
+      st.session_state["nome_preferido"] = "Concursando"
+      st.session_state.disciplinas = DISCIPLINAS_PADRAO.copy()
+      st.rerun()
+
+# --- FRASES MOTIVACIONAIS ---
+FRASES_MOTIVACIONAIS = [
+    f"Olá, {nome_aluno}! Cada questão resolvida é um passo rumo ao cargo!",
+    f"Bora estudar, {nome_aluno}! A constância vence qualquer desafio.",
+    f"A Defensoria Pública espera por você, {nome_aluno}! Mantenha o foco!",
+]
+
+
+# ==========================================
+# TELA: INÍCIO
+# ==========================================
+if menu_principal == "Início":
+  st.title(f"Olá, {nome_aluno}!")
+  st.caption(f"*{random.choice(FRASES_MOTIVACIONAIS)}*")
+
+  st.markdown("---")
+  col_bem_vindo, col_config = st.columns([2, 1])
+
+  with col_bem_vindo:
+    st.subheader("Bem-vindo(a) ao seu Circuito de Estudos!")
+    st.write(
+        "Plataforma desenvolvida para potencializar a sua preparação para"
+        " concursos públicos:\n- Circuito Rotativo: Mantenha um ritmo dinâmico"
+        " passando por todas as disciplinas.\n- Painel Analítico: Acompanhe a"
+        " sua porcentagem de acertos em tempo real.\n- Caderno de Erros:"
+        " Registre seus erros para identificar gargalos de estudo."
+    )
+
+  with col_config:
+    st.subheader("Como quer ser chamado(a)?")
+    novo_nome = st.text_input("Digite seu nome ou apelido:", value=nome_aluno)
+
+    if st.button("Salvar Meu Nome"):
+      if novo_nome.strip():
+        st.session_state["nome_preferido"] = novo_nome.strip()
+        if st.session_state["user"] and supabase:
+          try:
+            supabase.auth.update_user(
+                {"data": {"full_name": novo_nome.strip()}}
+            )
+          except Exception:
+            pass
+        st.success("Nome atualizado com sucesso!")
+        st.rerun()
+      else:
+        st.error("Digite um nome válido.")
+
+
+# ==========================================
+# TELA: EXECUTAR CIRCUITO
+# ==========================================
+elif menu_principal == "Executar Circuito":
+  st.title(f"Circuito de Estudos - {nome
