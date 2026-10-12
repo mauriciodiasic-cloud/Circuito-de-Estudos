@@ -413,7 +413,8 @@ elif menu_principal == "Painel de Desempenho":
           st.info("Nenhum bloco registrado ainda.")
         else:
           df = pd.DataFrame(dados)
-          df["created_at"] = pd.to_datetime(df["created_at"])
+          # Tratamento seguro da data removendo o fuso horário para evitar conflitos de comparação
+          df["created_at"] = pd.to_datetime(df["created_at"]).dt.tz_localize(None)
 
           total_feitas = df["feitas"].sum()
           total_acertos = df["acertos"].sum()
@@ -565,7 +566,6 @@ elif menu_principal == "Flashcards e Recorrências":
                 f" {item.get('resposta_fundamento')}"
             )
 
-            # Checkbox estilo caixa de e-mail para marcar como resolvido
             check_state = st.checkbox(
                 "Marcar como Resolvido",
                 value=is_resolvido,
@@ -586,7 +586,7 @@ elif menu_principal == "Flashcards e Recorrências":
 # ==========================================
 # TELA: GERENCIAR DISCIPLINAS
 # ==========================================
-elif menu_principal == "Gerenciar Disciplinas":
+else:
   st.subheader("Gerenciar Disciplinas e Ordem do Circuito")
   st.markdown(
       "Adicione novas matérias, remova ou digite o número da nova posição"
