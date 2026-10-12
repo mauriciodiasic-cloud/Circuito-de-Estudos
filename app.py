@@ -69,7 +69,7 @@ st.markdown(
 # --- CONFIGURAÇÃO DO SUPABASE ---
 SUPABASE_URL = "https://hweawyyqnzavrhejaotv.supabase.co"
 SUPABASE_KEY = (
-    st.secrets.get("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3ZWF3eXlxbnphdnJoZWphb3R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3NjgwMDQsImV4cCI6MjEwNzM0NDAwNH0.2mgHfTLJCy8fkId_w5yP6EFDP-cYWM0wM6ZpvHrIhpk")
+    st.secrets.get("hweawyyqnzavrhejaotv", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3ZWF3eXlxbnphdnJoZWphb3R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3NjgwMDQsImV4cCI6MjEwNzM0NDAwNH0.2mgHfTLJCy8fkId_w5yP6EFDP-cYWM0wM6ZpvHrIhpk")
     if hasattr(st, "secrets")
     else "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3ZWF3eXlxbnphdnJoZWphb3R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3NjgwMDQsImV4cCI6MjEwNzM0NDAwNH0.2mgHfTLJCy8fkId_w5yP6EFDP-cYWM0wM6ZpvHrIhpk"
 )
