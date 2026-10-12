@@ -1,0 +1,15 @@
+{
+  "name": "Circuito de Estudos",
+  "short_name": "Estudos",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0e1117",
+  "theme_color": "#0e1117",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/color/512/law.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
