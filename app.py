@@ -290,29 +290,27 @@ elif menu_principal == "Executar Circuito":
 
       enviar_bloco = st.form_submit_button("Concluir Serie e Avancar")
 
-      if enviar_bloco:
-        aproveitamento_bloco = (acertos / feitas) * 100
-        st.success(
-            f"Parabens! Aproveitamento de **{aproveitamento_bloco:.0f}%**!"
-        )
+    if enviar_bloco:
+      aproveitamento_bloco = (acertos / feitas) * 100
+      st.success(f"Parabens! Aproveitamento de **{aproveitamento_bloco:.0f}%**!")
 
-        if st.session_state["user"] and supabase:
-          try:
-            dados = {
-                "user_id": st.session_state["user"].id,
-                "disciplina": disc_atual,
-                "feitas": feitas,
-                "acertos": acertos,
-            }
-            supabase.table("historico_estudos").insert(dados).execute()
-          except Exception as e:
-            st.error(f"Erro ao salvar dados: {e}")
+      if st.session_state["user"] and supabase:
+        try:
+          dados = {
+              "user_id": st.session_state["user"].id,
+              "disciplina": disc_atual,
+              "feitas": feitas,
+              "acertos": acertos,
+          }
+          supabase.table("historico_estudos").insert(dados).execute()
+        except Exception as e:
+          st.error(f"Erro ao salvar dados: {e}")
 
-        st.session_state.series_concluidas[disc_atual] = serie_atual + 1
-        st.session_state.indice_atual = (idx + 1) % len(
-            st.session_state.disciplinas
-        )
-        st.rerun()
+      st.session_state.series_concluidas[disc_atual] = serie_atual + 1
+      st.session_state.indice_atual = (idx + 1) % len(
+          st.session_state.disciplinas
+      )
+      st.rerun()
 
     st.markdown("---")
     st.markdown("### Sequencia do Circuito")
@@ -392,3 +390,37 @@ elif menu_principal == "Flashcards e Recorrencias":
       with st.form("form_fc"):
         disc_escolhida = st.selectbox(
             "Disciplina:", st.session_state.disciplinas
+        )
+        assunto_livre = st.text_input("Assunto:")
+        comentario_erro = st.text_area("Fundamento / Comentario do Erro:")
+
+        enviar_fc = st.form_submit_button("Salvar Flashcard")
+
+      if enviar_fc:
+        if assunto_livre.strip() and comentario_erro.strip() and supabase:
+          try:
+            dados_fc = {
+                "user_id": st.session_state["user"].id,
+                "disciplina": disc_escolhida,
+                "assunto": assunto_livre.strip(),
+                "pergunta_erro": assunto_livre.strip(),
+                "resposta_fundamento": comentario_erro,
+            }
+            supabase.table("flashcards_erros").insert(dados_fc).execute()
+            st.success("Flashcard registrado com sucesso!")
+            st.rerun()
+          except Exception as e:
+            st.error(f"Erro ao salvar flashcard: {e}")
+
+
+# ==========================================
+# TELA: GERENCIAR DISCIPLINAS
+# ==========================================
+else:
+  st.subheader("Gerenciar Disciplinas e Ordem")
+
+  with st.expander("Adicionar Nova Disciplina", expanded=False):
+    nova_disc = st.text_input("Nome da disciplina:")
+    if st.button("Adicionar") and nova_disc.strip():
+      if nova_disc.strip() not in st.session_state.disciplinas:
+        st.session_state.disciplinas.append(nova_disc.strip())
