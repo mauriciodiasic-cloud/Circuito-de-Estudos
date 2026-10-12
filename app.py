@@ -69,12 +69,17 @@ else:
             st.rerun()
 
 # --- MENU DE NAVEGAÇÃO PRINCIPAL ---
-st.title("⚖️ Circuito de Estudos de Alto Rendimiento")
-st.markdown("*Foco na aprovação: Disciplina, volume de questões, percentual de acertos e caderno de erros integrado.*")
+st.title("⚖️ Circuito de Estudos de Alto Rendimento")
+st.markdown("*Foco na aprovação: Disciplina, volume de questões, percentual de acertos, painel e flashcards independentes.*")
 
 menu_principal = st.radio(
     "Navegação", 
-    ["🏋️‍♂️ Executar Circuito de Questões", "📊 Painel de Desempenho & Histórico", "⚙️ Gerenciar Disciplinas"],
+    [
+        "🏋️‍♂️ Executar Circuito", 
+        "📊 Painel de Desempenho", 
+        "🧠 Flashcards & Caderno de Erros", 
+        "⚙️ Gerenciar Disciplinas"
+    ],
     horizontal=True
 )
 
@@ -96,15 +101,14 @@ if "series_concluidas" not in st.session_state:
 # ==========================================
 # ABA 1: EXECUTAR CIRCUITO
 # ==========================================
-if menu_principal == "🏋️‍♂️ Executar Circuito de Questões":
+if menu_principal == "🏋️‍♂️ Executar Circuito":
     if st.session_state["user"] is None:
-        st.warning("⚠️ Você está operando no modo local. Faça login na barra lateral para salvar seu histórico e desempenho permanentemente na nuvem.")
+        st.warning("⚠️ Você está operando no modo local. Faça login na barra lateral para salvar seu progresso permanentemente na nuvem.")
 
     if st.session_state.disciplinas:
         disc_atual = st.session_state.disciplinas[st.session_state.indice_atual]
         serie_atual = st.session_state.series_concluidas[disc_atual]
 
-        # Caixa de destaque visual para o treino atual
         st.info(f"👉 **Aparelho / Matéria Atual:** `{disc_atual}`  |  📌 **Série:** `{serie_atual}`")
 
         with st.form("form_bloco"):
@@ -115,12 +119,9 @@ if menu_principal == "🏋️‍♂️ Executar Circuito de Questões":
             with col2:
                 acertos = st.number_input("Questões Acertadas", min_value=0, max_value=feitas, value=12, step=1)
 
-            erros_txt = st.text_area("📌 Caderno de Erros (O que errou e por quê? Ex: Jurisprudência do STJ, pegadinha de prazo):", placeholder="Anote o fundamento legal ou jurisprudencial que caiu...")
-
             enviar_bloco = st.form_submit_button("✅ Concluir Série e Avançar no Circuito ➡️")
 
             if enviar_bloco:
-                # Salva no Supabase se logado
                 if st.session_state["user"] and supabase:
                     try:
                         dados = {
@@ -128,7 +129,7 @@ if menu_principal == "🏋️‍♂️ Executar Circuito de Questões":
                             "disciplina": disc_atual,
                             "feitas": feitas,
                             "acertos": acertos,
-                            "erros": erros_txt if erros_txt.strip() else None
+                            "erros": None
                         }
                         supabase.table("historico_estudos").insert(dados).execute()
                         st.success("🎯 Desempenho gravado com sucesso na nuvem!")
@@ -137,7 +138,6 @@ if menu_principal == "🏋️‍♂️ Executar Circuito de Questões":
                 else:
                     st.success("🎯 Bloco concluído (faça login para persistir dados na nuvem)!")
 
-                # Atualiza o circuito rotativo
                 st.session_state.series_concluidas[disc_atual] += 1
                 st.session_state.indice_atual = (st.session_state.indice_atual + 1) % len(st.session_state.disciplinas)
                 st.rerun()
@@ -153,9 +153,9 @@ if menu_principal == "🏋️‍♂️ Executar Circuito de Questões":
 
 
 # ==========================================
-# ABA 2: PAINEL DE DESEMPENHO & HISTÓRICO
+# ABA 2: PAINEL DE DESEMPENHO
 # ==========================================
-elif menu_principal == "📊 Painel de Desempenho & Histórico":
+elif menu_principal == "📊 Painel de Desempenho":
     st.subheader("📈 Painel Analítico de Evolução")
 
     if st.session_state["user"] is None:
@@ -163,16 +163,14 @@ elif menu_principal == "📊 Painel de Desempenho & Histórico":
     else:
         if supabase:
             try:
-                # Buscar dados do usuário logado
                 res = supabase.table("historico_estudos").select("*").eq("user_id", st.session_state["user"].id).execute()
                 dados = res.data
 
                 if not dados:
-                    st.info("📭 Nenhum bloco de estudos registado até ao momento. Conclua algumas séries na aba inicial para ver as estatísticas!")
+                    st.info("📭 Nenhum bloco de estudos registado até ao momento. Conclua algumas séries na aba inicial!")
                 else:
                     df = pd.DataFrame(dados)
                     
-                    # Métricas Gerais
                     total_feitas = df["feitas"].sum()
                     total_acertos = df["acertos"].sum()
                     aproveitamento_geral = (total_acertos / total_feitas) * 100 if total_feitas > 0 else 0
@@ -185,15 +183,12 @@ elif menu_principal == "📊 Painel de Desempenho & Histórico":
                     st.markdown("---")
                     st.subheader("📊 Desempenho por Disciplina")
 
-                    # Agrupar por disciplina
                     resumo_disc = df.groupby("disciplina")[["feitas", "acertos"]].sum().reset_index()
                     resumo_disc["Aproveitamento (%)"] = (resumo_disc["acertos"] / resumo_disc["feitas"] * 100).round(1)
                     resumo_disc = resumo_disc.sort_values(by="Aproveitamento (%)", ascending=False)
 
-                    # Exibir tabela formatada
                     st.dataframe(resumo_disc, use_container_width=True)
 
-                    # Alertas de Dificuldade vs Evolução
                     st.markdown("### 💡 Diagnóstico de Alta Performance")
                     melhor = resumo_disc.iloc[0] if not resumo_disc.empty else None
                     pior = resumo_disc.iloc[-1] if not resumo_disc.empty else None
@@ -201,35 +196,87 @@ elif menu_principal == "📊 Painel de Desempenho & Histórico":
                     if melhor is not None and pior is not None:
                         col_a, col_b = st.columns(2)
                         with col_a:
-                            st.success(f"🏆 **Ponto Forte:** `{melhor['disciplina']}`\n\nAproveitamento excelente de **{melhor['Aproveitamento (%)']}%**. Continue mantendo o ritmo!")
+                            st.success(f"🏆 **Ponto Forte:** `{melhor['disciplina']}`\n\nAproveitamento de **{melhor['Aproveitamento (%)']}%**.")
                         with col_b:
-                            st.error(f"⚠️ **Atenção (Maior Dificuldade):** `{pior['disciplina']}`\n\nAproveitamento de **{pior['Aproveitamento (%)']}%**. Recomenda-se focar mais tempo no Caderno de Erros desta matéria.")
-
-                    st.markdown("---")
-                    st.subheader("📓 Caderno de Erros & Histórico Completo")
-                    
-                    # Filtrar por disciplina se desejar
-                    filtro_disc = st.selectbox("Filtrar Histórico por Disciplina:", ["Todas"] + list(df["disciplina"].unique()))
-                    if filtro_disc != "Todas":
-                        df_filtrado = df[df["disciplina"] == filtro_disc]
-                    else:
-                        df_filtrado = df
-
-                    # Exibir tabela detalhada
-                    for index, row in df_filtrado.iterrows():
-                        porc = (row["acertos"] / row["feitas"]) * 100 if row["feitas"] > 0 else 0
-                        with st.expander(f"📌 {row['data'][:10]} | {row['disciplina']} — Acertos: {row['acertos']}/{row['feitas']} ({porc:.0f}%)"):
-                            if row["erros"]:
-                                st.markdown(f"**Motivo do Erro / Anotação:**\n> {row['erros']}")
-                            else:
-                                st.markdown("*Nenhum registo de erro específico para este bloco.*")
+                            st.error(f"⚠️ **Atenção (Maior Dificuldade):** `{pior['disciplina']}`\n\nAproveitamento de **{pior['Aproveitamento (%)']}%**. Foque nos Flashcards desta matéria!")
 
             except Exception as e:
                 st.error(f"Erro ao carregar dados do painel: {e}")
 
 
 # ==========================================
-# ABA 3: GERENCIAR DISCIPLINAS
+# ABA 3: FLASHCARDS & CADERNO DE ERROS (INDEPENDENTE)
+# ==========================================
+elif menu_principal == "🧠 Flashcards & Caderno de Erros":
+    st.subheader("🧠 Gestão Independente de Flashcards e Caderno de Erros")
+    st.markdown("Cadastre de forma livre os pontos de atenção, súmulas, jurisprudências ou pegadinhas que errou em simulados externos, e consulte-os por disciplina.")
+
+    if st.session_state["user"] is None:
+        st.warning("⚠️ Faça login na barra lateral para criar e sincronizar os seus flashcards na nuvem.")
+    else:
+        # Seção de Cadastro Independente
+        with st.expander("➕ Adicionar Novo Flashcard / Erro", expanded=True):
+            with st.form("form_flashcard"):
+                disc_fc = st.selectbox("Disciplina:", st.session_state.disciplinas)
+                pergunta_fc = st.text_input("Pegadinha / Pergunta / Tema do Erro:", placeholder="Ex: Prazo para embargos infringentes no CPC...")
+                resposta_fc = st.text_area("Explicação / Fundamento Legal / Jurisprudência correta:", placeholder="Ex: Art. 1.009 do CPC... Súmula X do STJ...")
+                
+                salvar_fc = st.form_submit_button("Salvar Flashcard 💾")
+
+                if salvar_fc:
+                    if pergunta_fc.strip() and resposta_fc.strip() and supabase:
+                        try:
+                            dados_fc = {
+                                "user_id": st.session_state["user"].id,
+                                "disciplina": disc_fc,
+                                "pergunta_erro": pergunta_fc,
+                                "resposta_fundamento": resposta_fc
+                            }
+                            supabase.table("flashcards_erros").insert(dados_fc).execute()
+                            st.success("🧠 Flashcard guardado com sucesso!")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Erro ao salvar flashcard: {e}")
+                    else:
+                        st.error("Preencha todos os campos obrigatórios.")
+
+        st.markdown("---")
+        st.subheader("📚 Meus Flashcards Cadastrados")
+
+        if supabase:
+            try:
+                res_fc = supabase.table("flashcards_erros").select("*").eq("user_id", st.session_state["user"].id).execute()
+                lista_fc = res_fc.data
+
+                if not lista_fc:
+                    st.info("📭 Nenhum flashcard cadastrado ainda. Use o formulário acima para adicionar os seus erros e revisões!")
+                else:
+                    df_fc = pd.DataFrame(lista_fc)
+                    
+                    filtro_fc_disc = st.selectbox("Filtrar Flashcards por Disciplina:", ["Todas"] + list(df_fc["disciplina"].unique()))
+                    if filtro_fc_disc != "Todas":
+                        df_fc_filtrado = df_fc[df_fc["disciplina"] == filtro_fc_disc]
+                    else:
+                        df_fc_filtrado = df_fc
+
+                    for idx, row in df_fc_filtrado.iterrows():
+                        with st.expander(f"📌 [{row['disciplina']}] {row['pergunta_erro']}"):
+                            st.markdown(f"**Fundamento / Resposta Correta:**\n> {row['resposta_fundamento']}")
+                            
+                            if st.button("🗑️ Excluir Flashcard", key=f"del_fc_{row['id']}"):
+                                try:
+                                    supabase.table("flashcards_erros").delete().eq("id", row['id']).execute()
+                                    st.success("Flashcard removido!")
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"Erro ao excluir: {e}")
+
+            except Exception as e:
+                st.error(f"Erro ao carregar flashcards: {e}")
+
+
+# ==========================================
+# ABA 4: GERENCIAR DISCIPLINAS
 # ==========================================
 else:
     st.subheader("⚙️ Personalizar Circuito de Estudos")
