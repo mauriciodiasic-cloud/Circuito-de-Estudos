@@ -3,14 +3,14 @@ import pandas as pd
 import streamlit as st
 from supabase import Client, create_client
 
-# --- CONFIGURACAO DA PAGINA E PWA ---
+# --- CONFIGURAÇÃO DA PÁGINA E PWA ---
 st.set_page_config(
-    page_title="Circuito de Estudos - Rumo a Aprovacao",
+    page_title="Circuito de Estudos - Rumo à Aprovação",
     page_icon="🔥",
     layout="wide",
 )
 
-# --- ESTILIZACAO CSS CUSTOMIZADA ---
+# --- ESTILIZAÇÃO CSS CUSTOMIZADA ---
 st.markdown(
     """
     <style>
@@ -43,7 +43,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- CONFIGURACAO DO SUPABASE ---
+# --- CONFIGURAÇÃO DO SUPABASE ---
 SUPABASE_URL = "https://hweawyyqnzavrhejaotv.supabase.co"
 SUPABASE_KEY = (
     st.secrets.get("SUPABASE_KEY")
@@ -64,7 +64,7 @@ def init_supabase():
 
 supabase: Client = init_supabase()
 
-# --- INICIALIZACAO SEGURA DO SESSION STATE ---
+# --- INICIALIZAÇÃO SEGURA DO SESSION STATE ---
 if "disciplinas" not in st.session_state:
   st.session_state.disciplinas = [
       "Direito Constitucional",
@@ -74,7 +74,7 @@ if "disciplinas" not in st.session_state:
       "Direito Penal",
       "Processo Penal",
       "E.C.A.",
-      "Execucao Penal",
+      "Execução Penal",
       "Direitos Humanos",
       "Empresarial",
       "Direito do Consumidor",
@@ -94,7 +94,7 @@ if "user" not in st.session_state:
 if "nome_preferido" not in st.session_state:
   st.session_state["nome_preferido"] = "Concursando"
 
-# --- RECUPERACAO AUTOMATICA DE SESSAO DO SUPABASE ---
+# --- RECUPERAÇÃO AUTOMÁTICA DE SESSÃO DO SUPABASE ---
 if supabase and st.session_state["user"] is None:
   try:
     current_session = supabase.auth.get_session()
@@ -117,25 +117,25 @@ if st.session_state.disciplinas:
 
 nome_aluno = st.session_state.get("nome_preferido") or "Concursando"
 
-# --- NAVEGACAO E AUTENTICACAO NA BARRA LATERAL ---
+# --- NAVEGAÇÃO E AUTENTICAÇÃO NA BARRA LATERAL ---
 st.sidebar.title("Menu Principal")
 
 menu_principal = st.sidebar.radio(
     "Navegue pelas telas:",
     [
-        "Inicio",
+        "Início",
         "Executar Circuito",
         "Painel de Desempenho",
-        "Flashcards e Recorrencias",
+        "Flashcards e Recorrências",
         "Gerenciar Disciplinas",
     ],
 )
 
 st.sidebar.markdown("---")
-st.sidebar.title("Area do Usuario")
+st.sidebar.title("Área do Usuário")
 
 if supabase is None:
-  st.sidebar.warning("Modo Offline / Supabase nao configurado.")
+  st.sidebar.warning("Modo Offline / Supabase não configurado.")
 else:
   if st.session_state["user"] is None:
     aba_auth = st.sidebar.radio(
@@ -189,14 +189,14 @@ else:
           st.sidebar.error("E-mail ou senha incorretos. Tente novamente.")
 
     elif aba_auth == "Esqueci a Senha":
-      st.sidebar.markdown("Redefinicao de Senha")
+      st.sidebar.markdown("Redefinição de Senha")
       email_recuperacao = st.sidebar.text_input("E-mail cadastrado")
 
-      if st.sidebar.button("Enviar E-mail de Recuperacao"):
+      if st.sidebar.button("Enviar E-mail de Recuperação"):
         if email_recuperacao.strip():
           try:
             supabase.auth.reset_password_for_email(email_recuperacao.strip())
-            st.sidebar.success("Enviamos um link de redefinicao para o e-mail!")
+            st.sidebar.success("Enviamos um link de redefinição para o e-mail!")
           except Exception as e:
             st.sidebar.error(f"Erro ao enviar e-mail: {e}")
         else:
@@ -211,17 +211,17 @@ else:
 
 # --- FRASES MOTIVACIONAIS ---
 FRASES_MOTIVACIONAIS = [
-    f"Ola, {nome_aluno}! Cada questao resolvida e um passo rumo ao cargo!",
-    f"Bora estudar, {nome_aluno}! A constancia vence qualquer desafio.",
-    f"A Defensoria Publica espera por voce, {nome_aluno}! Mantenha o foco!",
+    f"Olá, {nome_aluno}! Cada questão resolvida é um passo rumo ao cargo!",
+    f"Bora estudar, {nome_aluno}! A constância vence qualquer desafio.",
+    f"A Defensoria Pública espera por você, {nome_aluno}! Mantenha o foco!",
 ]
 
 
 # ==========================================
-# TELA: INICIO
+# TELA: INÍCIO
 # ==========================================
-if menu_principal == "Inicio":
-  st.title(f"Ola, {nome_aluno}!")
+if menu_principal == "Início":
+  st.title(f"Olá, {nome_aluno}!")
   st.caption(f"*{random.choice(FRASES_MOTIVACIONAIS)}*")
 
   st.markdown("---")
@@ -230,9 +230,9 @@ if menu_principal == "Inicio":
   with col_bem_vindo:
     st.subheader("Bem-vindo(a) ao seu Circuito de Estudos!")
     st.write(
-        "Plataforma desenvolvida para potencializar a sua preparacao para"
-        " concursos publicos:\n- Circuito Rotativo: Mantenha um ritmo dinâmico"
-        " passando por todas as disciplinas.\n- Painel Analitico: Acompanhe a"
+        "Plataforma desenvolvida para potencializar a sua preparação para"
+        " concursos públicos:\n- Circuito Rotativo: Mantenha um ritmo dinâmico"
+        " passando por todas as disciplinas.\n- Painel Analítico: Acompanhe a"
         " sua porcentagem de acertos em tempo real.\n- Caderno de Erros:"
         " Registre seus erros para identificar gargalos de estudo."
     )
@@ -254,7 +254,7 @@ if menu_principal == "Inicio":
         st.success("Nome atualizado com sucesso!")
         st.rerun()
       else:
-        st.error("Digite um nome valido.")
+        st.error("Digite um nome válido.")
 
 
 # ==========================================
@@ -265,7 +265,7 @@ elif menu_principal == "Executar Circuito":
 
   if st.session_state["user"] is None:
     st.warning(
-        "Voce esta no modo visitante. Faça login para salvar seu progresso na"
+        "Você está no modo visitante. Faça login para salvar seu progresso na"
         " nuvem!"
     )
 
@@ -274,25 +274,25 @@ elif menu_principal == "Executar Circuito":
     disc_atual = st.session_state.disciplinas[idx]
     serie_atual = st.session_state.series_concluidas.get(disc_atual, 1)
 
-    st.info(f"Materia Atual: `{disc_atual}` | Serie: `{serie_atual}`")
+    st.info(f"Matéria Atual: `{disc_atual}` | Série: `{serie_atual}`")
 
     with st.form("form_bloco"):
-      st.subheader("Registrar Bloco de Questoes Resolvidas")
+      st.subheader("Registrar Bloco de Questões Resolvidas")
       col1, col2 = st.columns(2)
       with col1:
         feitas = st.number_input(
-            "Questoes Feitas", min_value=1, value=15, step=1
+            "Questões Feitas", min_value=1, value=15, step=1
         )
       with col2:
         acertos = st.number_input(
-            "Questoes Acertadas", min_value=0, max_value=feitas, value=12, step=1
+            "Questões Acertadas", min_value=0, max_value=feitas, value=12, step=1
         )
 
-      enviar_bloco = st.form_submit_button("Concluir Serie e Avancar")
+      enviar_bloco = st.form_submit_button("Concluir Série e Avançar")
 
     if enviar_bloco:
       aproveitamento_bloco = (acertos / feitas) * 100
-      st.success(f"Parabens! Aproveitamento de **{aproveitamento_bloco:.0f}%**!")
+      st.success(f"Parabéns! Aproveitamento de **{aproveitamento_bloco:.0f}%**!")
 
       if st.session_state["user"] and supabase:
         try:
@@ -313,7 +313,7 @@ elif menu_principal == "Executar Circuito":
       st.rerun()
 
     st.markdown("---")
-    st.markdown("### Sequencia do Circuito")
+    st.markdown("### Sequência do Circuito")
     for i, d in enumerate(st.session_state.disciplinas):
       marcador = (
           "[ESTUDAR AGORA]"
@@ -322,7 +322,7 @@ elif menu_principal == "Executar Circuito":
           else "[OK]"
       )
       st.text(
-          f"{marcador} {d} — Serie"
+          f"{marcador} {d} — Série"
           f" {st.session_state.series_concluidas.get(d, 1)}"
       )
 
@@ -331,10 +331,10 @@ elif menu_principal == "Executar Circuito":
 # TELA: PAINEL DE DESEMPENHO
 # ==========================================
 elif menu_principal == "Painel de Desempenho":
-  st.subheader(f"Painel de Evolucao — {nome_aluno}")
+  st.subheader(f"Painel de Evolução — {nome_aluno}")
 
   if st.session_state["user"] is None:
-    st.warning("Faça login na barra lateral para carregar seu historico.")
+    st.warning("Faça login na barra lateral para carregar seu histórico.")
   else:
     if supabase:
       try:
@@ -357,7 +357,7 @@ elif menu_principal == "Painel de Desempenho":
           )
 
           c1, c2, c3 = st.columns(3)
-          c1.metric("Questoes Resolvidas", f"{total_feitas:,}")
+          c1.metric("Questões Resolvidas", f"{total_feitas:,}")
           c2.metric("Total de Acertos", f"{total_acertos:,}")
           c3.metric("Rendimento Geral", f"{aproveitamento_geral:.1f}%")
 
@@ -378,9 +378,9 @@ elif menu_principal == "Painel de Desempenho":
 
 
 # ==========================================
-# TELA: FLASHCARDS E RECORRENCIAS
+# TELA: FLASHCARDS E RECORRÊNCIAS
 # ==========================================
-elif menu_principal == "Flashcards e Recorrencias":
+elif menu_principal == "Flashcards e Recorrências":
   st.subheader(f"Caderno de Erros — {nome_aluno}")
 
   if st.session_state["user"] is None:
@@ -392,7 +392,7 @@ elif menu_principal == "Flashcards e Recorrencias":
             "Disciplina:", st.session_state.disciplinas
         )
         assunto_livre = st.text_input("Assunto:")
-        comentario_erro = st.text_area("Fundamento / Comentario do Erro:")
+        comentario_erro = st.text_area("Fundamento / Comentário do Erro:")
 
         enviar_fc = st.form_submit_button("Salvar Flashcard")
 
@@ -417,10 +417,64 @@ elif menu_principal == "Flashcards e Recorrencias":
 # TELA: GERENCIAR DISCIPLINAS
 # ==========================================
 else:
-  st.subheader("Gerenciar Disciplinas e Ordem")
+  st.subheader("Gerenciar Disciplinas e Ordem do Circuito")
+  st.markdown(
+      "Adicione novas matérias ou altere a ordem em que aparecem no circuito"
+      " usando os botões **Subir** e **Descer**."
+  )
 
   with st.expander("Adicionar Nova Disciplina", expanded=False):
     nova_disc = st.text_input("Nome da disciplina:")
     if st.button("Adicionar") and nova_disc.strip():
-      if nova_disc.strip() not in st.session_state.disciplinas:
-        st.session_state.disciplinas.append(nova_disc.strip())
+      nova_limpa = nova_disc.strip()
+      if nova_limpa not in st.session_state.disciplinas:
+        st.session_state.disciplinas.append(nova_limpa)
+        st.session_state.series_concluidas[nova_limpa] = 1
+        st.success("Disciplina adicionada com sucesso!")
+        st.rerun()
+      else:
+        st.warning("Esta disciplina já consta no circuito.")
+
+  st.markdown("---")
+  st.subheader("Ordem Atual das Disciplinas")
+
+  if not st.session_state.disciplinas:
+    st.warning("Nenhuma disciplina cadastrada.")
+  else:
+    for idx, d in enumerate(st.session_state.disciplinas):
+      c_pos, c_nome, c_subir, c_descer, c_remover = st.columns(
+          [1, 4, 1.5, 1.5, 1.5]
+      )
+
+      c_pos.markdown(f"**#{idx + 1}**")
+      c_nome.write(f"**{d}**")
+
+      if c_subir.button("Subir ⬆️", key=f"up_{idx}"):
+        if idx > 0:
+          st.session_state.disciplinas[idx], st.session_state.disciplinas[
+              idx - 1
+          ] = (
+              st.session_state.disciplinas[idx - 1],
+              st.session_state.disciplinas[idx],
+          )
+          st.rerun()
+
+      if c_descer.button("Descer ⬇️", key=f"down_{idx}"):
+        if idx < len(st.session_state.disciplinas) - 1:
+          st.session_state.disciplinas[idx], st.session_state.disciplinas[
+              idx + 1
+          ] = (
+              st.session_state.disciplinas[idx + 1],
+              st.session_state.disciplinas[idx],
+          )
+          st.rerun()
+
+      if c_remover.button("Remover 🗑️", key=f"rem_{idx}"):
+        st.session_state.disciplinas.pop(idx)
+        if st.session_state.disciplinas:
+          st.session_state.indice_atual = st.session_state.indice_atual % len(
+              st.session_state.disciplinas
+          )
+        else:
+          st.session_state.indice_atual = 0
+        st.rerun()
