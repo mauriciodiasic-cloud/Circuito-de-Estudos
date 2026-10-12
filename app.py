@@ -3,22 +3,14 @@ import pandas as pd
 import streamlit as st
 from supabase import Client, create_client
 
-# --- CONFIGURAÇÃO DA PÁGINA E PWA ---
+# --- CONFIGURACAO DA PAGINA E PWA ---
 st.set_page_config(
-    page_title="Circuito de Estudos - Rumo à Aprovação! 🚀",
-    page_icon="🔥",
+    page_title="Circuito de Estudos - Rumo a Aprovacao",
+    page_icon="F",
     layout="wide",
 )
 
-st.markdown(
-    """
-    <link rel="manifest" href="app/static/manifest.json">
-    <meta name="theme-color" content="#1E1E2E">
-    """,
-    unsafe_allow_html=True,
-)
-
-# --- ESTILIZAÇÃO CSS CUSTOMIZADA ---
+# --- ESTILIZACAO CSS CUSTOMIZADA ---
 st.markdown(
     """
     <style>
@@ -37,12 +29,6 @@ st.markdown(
         padding: 18px;
         border-radius: 16px;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    div[data-testid="stMetric"]:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(138, 35, 135, 0.4);
-        border-color: #FEB47B;
     }
     .stButton>button {
         background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%) !important;
@@ -51,22 +37,13 @@ st.markdown(
         border-radius: 12px !important;
         border: none !important;
         padding: 10px 24px !important;
-        box-shadow: 0 4px 12px rgba(37, 117, 252, 0.3) !important;
-        transition: all 0.3s ease !important;
-    }
-    .stButton>button:hover {
-        transform: scale(1.03) !important;
-        box-shadow: 0 6px 20px rgba(37, 117, 252, 0.6) !important;
-    }
-    .stAlert {
-        border-radius: 14px !important;
     }
     </style>
 """,
     unsafe_allow_html=True,
 )
 
-# --- CONFIGURAÇÃO DO SUPABASE ---
+# --- CONFIGURACAO DO SUPABASE ---
 SUPABASE_URL = "https://hweawyyqnzavrhejaotv.supabase.co"
 SUPABASE_KEY = (
     st.secrets.get("SUPABASE_KEY")
@@ -87,7 +64,7 @@ def init_supabase():
 
 supabase: Client = init_supabase()
 
-# --- INICIALIZAÇÃO SEGURA DO SESSION STATE ---
+# --- INICIALIZACAO SEGURA DO SESSION STATE ---
 if "disciplinas" not in st.session_state:
   st.session_state.disciplinas = [
       "Direito Constitucional",
@@ -97,7 +74,7 @@ if "disciplinas" not in st.session_state:
       "Direito Penal",
       "Processo Penal",
       "E.C.A.",
-      "Execução Penal",
+      "Execucao Penal",
       "Direitos Humanos",
       "Empresarial",
       "Direito do Consumidor",
@@ -117,7 +94,7 @@ if "user" not in st.session_state:
 if "nome_preferido" not in st.session_state:
   st.session_state["nome_preferido"] = "Concursando"
 
-# --- RECUPERAÇÃO AUTOMÁTICA DE SESSÃO DO SUPABASE ---
+# --- RECUPERACAO AUTOMATICA DE SESSAO DO SUPABASE ---
 if supabase and st.session_state["user"] is None:
   try:
     current_session = supabase.auth.get_session()
@@ -133,7 +110,6 @@ if supabase and st.session_state["user"] is None:
   except Exception as e:
     pass
 
-# Ajuste preventivo de índice para evitar erros de limites
 if st.session_state.disciplinas:
   st.session_state.indice_atual = st.session_state.indice_atual % len(
       st.session_state.disciplinas
@@ -141,28 +117,25 @@ if st.session_state.disciplinas:
 
 nome_aluno = st.session_state.get("nome_preferido") or "Concursando"
 
-# --- NAVEGAÇÃO E AUTENTICAÇÃO NA BARRA LATERAL ---
-st.sidebar.title("📌 Menu Principal")
+# --- NAVEGACAO E AUTENTICACAO NA BARRA LATERAL ---
+st.sidebar.title("Menu Principal")
 
 menu_principal = st.sidebar.radio(
     "Navegue pelas telas:",
     [
-        "🏠 Início",
-        "🏋️‍♂️ Executar Circuito",
-        "📊 Painel de Desempenho",
-        "🧠 Flashcards & Recorrências",
-        "⚙️ Gerenciar Disciplinas",
+        "Inicio",
+        "Executar Circuito",
+        "Painel de Desempenho",
+        "Flashcards e Recorrencias",
+        "Gerenciar Disciplinas",
     ],
 )
 
 st.sidebar.markdown("---")
-st.sidebar.title("🔑 Área do Usuário")
+st.sidebar.title("Area do Usuario")
 
 if supabase is None:
-  st.sidebar.warning(
-      "⚠️ Modo Offline / Supabase não configurado. Adicione a sua"
-      " `SUPABASE_KEY`."
-  )
+  st.sidebar.warning("Modo Offline / Supabase nao configurado.")
 else:
   if st.session_state["user"] is None:
     aba_auth = st.sidebar.radio(
@@ -174,7 +147,7 @@ else:
       email_input = st.sidebar.text_input("E-mail")
       senha_input = st.sidebar.text_input("Senha", type="password")
 
-      if st.sidebar.button("Cadastrar 🚀"):
+      if st.sidebar.button("Cadastrar"):
         if not nome_input.strip():
           st.sidebar.error("Por favor, informe o seu nome.")
         elif len(senha_input) < 6:
@@ -197,7 +170,7 @@ else:
       email_input = st.sidebar.text_input("E-mail")
       senha_input = st.sidebar.text_input("Senha", type="password")
 
-      if st.sidebar.button("Entrar ✨"):
+      if st.sidebar.button("Entrar"):
         try:
           res = supabase.auth.sign_in_with_password(
               {"email": email_input, "password": senha_input}
@@ -210,85 +183,66 @@ else:
           )
           st.session_state["nome_preferido"] = nome_usuario
 
-          st.sidebar.success(f"Bem-vindo(a) de volta, {nome_usuario}! 🎯")
+          st.sidebar.success(f"Bem-vindo(a) de volta, {nome_usuario}!")
           st.rerun()
         except Exception as e:
           st.sidebar.error("E-mail ou senha incorretos. Tente novamente.")
 
     elif aba_auth == "Esqueci a Senha":
-      st.sidebar.markdown("##### 🔑 Redefinição de Senha")
+      st.sidebar.markdown("Redefinicao de Senha")
       email_recuperacao = st.sidebar.text_input("E-mail cadastrado")
 
-      if st.sidebar.button("Enviar E-mail de Recuperação 📩"):
+      if st.sidebar.button("Enviar E-mail de Recuperacao"):
         if email_recuperacao.strip():
           try:
             supabase.auth.reset_password_for_email(email_recuperacao.strip())
-            st.sidebar.success(
-                "Enviamos um link de redefinição para o seu e-mail!"
-            )
+            st.sidebar.success("Enviamos um link de redefinicao para o e-mail!")
           except Exception as e:
             st.sidebar.error(f"Erro ao enviar e-mail: {e}")
         else:
           st.sidebar.error("Digite o seu e-mail cadastrado.")
   else:
-    st.sidebar.success(f"⚡ Conectado como: **{nome_aluno}**")
-    if st.sidebar.button("Sair da Conta 👋"):
+    st.sidebar.success(f"Conectado como: **{nome_aluno}**")
+    if st.sidebar.button("Sair da Conta"):
       supabase.auth.sign_out()
       st.session_state["user"] = None
       st.session_state["nome_preferido"] = "Concursando"
       st.rerun()
 
-# --- FRASES MOTIVACIONAIS PERSONALIZADAS ---
+# --- FRASES MOTIVACIONAIS ---
 FRASES_MOTIVACIONAIS = [
-    (
-        f"🔥 Olá, {nome_aluno}! Cada questão resolvida é um passo a mais rumo"
-        " ao seu cargo!"
-    ),
-    f"🚀 Bora estudar, {nome_aluno}! A constância vence qualquer desafio.",
-    (
-        f"🛡️ A Defensoria Pública espera por você, {nome_aluno}! Mantenha o"
-        " foco!"
-    ),
-    (
-        f"💡 Vamos com tudo, {nome_aluno}! O erro de hoje é a sua questão certa"
-        " na prova!"
-    ),
-    (
-        f"🏆 Força nos estudos, {nome_aluno}! Sua aprovação está sendo"
-        " construída agora."
-    ),
+    f"Ola, {nome_aluno}! Cada questao resolvida e um passo rumo ao cargo!",
+    f"Bora estudar, {nome_aluno}! A constancia vence qualquer desafio.",
+    f"A Defensoria Publica espera por voce, {nome_aluno}! Mantenha o foco!",
 ]
 
 
 # ==========================================
-# TELA INITIAL: 🏠 INÍCIO
+# TELA: INICIO
 # ==========================================
-if menu_principal == "🏠 Início":
-  st.title(f"👋 Olá, {nome_aluno}!")
-  st.caption(f"💬 *{random.choice(FRASES_MOTIVACIONAIS)}*")
+if menu_principal == "Inicio":
+  st.title(f"Ola, {nome_aluno}!")
+  st.caption(f"*{random.choice(FRASES_MOTIVACIONAIS)}*")
 
   st.markdown("---")
-
   col_bem_vindo, col_config = st.columns([2, 1])
 
   with col_bem_vindo:
-    st.subheader("🚀 Bem-vindo(a) ao seu Circuito de Estudos!")
+    st.subheader("Bem-vindo(a) ao seu Circuito de Estudos!")
     st.write("""
-        Esta plataforma foi desenvolvida para potencializar a sua preparação para concursos públicos de alto nível:
-        
-        * 🏋️‍♂️ **Circuito Rotativo:** Mantenha um ritmo dinâmico e equilibrado passando por todas as disciplinas.
-        * 📊 **Painel Analítico:** Acompanhe a sua porcentagem de acertos geral e por matéria em tempo real.
-        * 🧠 **Caderno de Erros Inteligente:** Registre seus erros em 3 níveis (Disciplina, Assunto e Comentário) para identificar padrões e gargalos de estudo.
+        Plataforma desenvolvida para potencializar a sua preparacao para concursos publicos:
+        * Circuito Rotativo: Mantenha um ritmo dinâmico passando por todas as disciplinas.
+        * Painel Analitico: Acompanhe a sua porcentagem de acertos em tempo real.
+        * Caderno de Erros: Registre seus erros para identificar gargalos de estudo.
         """)
 
   with col_config:
-    st.subheader("👤 Como quer ser chamado(a)?")
+    st.subheader("Como quer ser chamado(a)?")
     novo_nome = st.text_input("Digite seu nome ou apelido:", value=nome_aluno)
 
-    if st.button("Salvar Meu Nome 💾"):
+    if st.button("Salvar Meu Nome"):
       if novo_nome.strip():
         st.session_state["nome_preferido"] = novo_nome.strip()
-
         if st.session_state["user"] and supabase:
           try:
             supabase.auth.update_user(
@@ -296,26 +250,59 @@ if menu_principal == "🏠 Início":
             )
           except Exception as e:
             pass
-
-        st.success(f"Perfeito, {novo_nome.strip()}! Nome atualizado com sucesso!")
+        st.success(f"Nome atualizado com sucesso!")
         st.rerun()
       else:
-        st.error("Digite um nome válido.")
+        st.error("Digite um nome valido.")
 
-  st.markdown("---")
-  st.subheader("⚡ Atalhos Rápidos")
-  col_a, col_b, col_c = st.columns(3)
 
-  with col_a:
-    st.info(
-        "🏋️‍♂️ **Pronto para treinar?**\n\nInicie ou continue o seu circuito de"
-        " questões."
-    )
-  with col_b:
-    st.success(
-        "📊 **Quer ver sua evolução?**\n\nConfira suas métricas e gráficos de"
-        " desempenho."
-    )
-  with col_c:
+# ==========================================
+# TELA: EXECUTAR CIRCUITO
+# ==========================================
+elif menu_principal == "Executar Circuito":
+  st.title(f"Circuito de Estudos - {nome_aluno}")
+
+  if st.session_state["user"] is None:
     st.warning(
-        "🧠
+        "Voce esta no modo visitante. Faça login para salvar seu progresso na"
+        " nuvem!"
+    )
+
+  if st.session_state.disciplinas:
+    idx = st.session_state.indice_atual % len(st.session_state.disciplinas)
+    disc_atual = st.session_state.disciplinas[idx]
+    serie_atual = st.session_state.series_concluidas.get(disc_atual, 1)
+
+    st.info(f"Materia Atual: `{disc_atual}` | Serie: `{serie_atual}`")
+
+    with st.form("form_bloco"):
+      st.subheader("Registrar Bloco de Questoes Resolvidas")
+      col1, col2 = st.columns(2)
+      with col1:
+        feitas = st.number_input(
+            "Questoes Feitas", min_value=1, value=15, step=1
+        )
+      with col2:
+        acertos = st.number_input(
+            "Questoes Acertadas", min_value=0, max_value=feitas, value=12, step=1
+        )
+
+      enviar_bloco = st.form_submit_button("Concluir Serie e Avancar")
+
+      if enviar_bloco:
+        aproveitamento_bloco = (acertos / feitas) * 100
+        st.success(
+            f"Parabens! Aproveitamento de **{aproveitamento_bloco:.0f}%**!"
+        )
+
+        if st.session_state["user"] and supabase:
+          try:
+            dados = {
+                "user_id": st.session_state["user"].id,
+                "disciplina": disc_atual,
+                "feitas": feitas,
+                "acertos": acertos,
+            }
+            supabase.table("historico_estudos").insert(dados).execute()
+          except Exception as e:
+            st.error(f"Erro
