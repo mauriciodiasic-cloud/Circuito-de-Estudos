@@ -178,7 +178,6 @@ if menu_principal == "🏋️‍♂️ Executar Circuito":
         st.warning("⚠️ Você está estudando no modo visitante. Faça login na barra lateral para salvar seu progresso permanentemente na nuvem!")
 
     if st.session_state.disciplinas:
-        # Garantia de índice válido
         idx = st.session_state.indice_atual % len(st.session_state.disciplinas)
         disc_atual = st.session_state.disciplinas[idx]
         serie_atual = st.session_state.series_concluidas.get(disc_atual, 1)
@@ -198,7 +197,6 @@ if menu_principal == "🏋️‍♂️ Executar Circuito":
             if enviar_bloco:
                 aproveitamento_bloco = (acertos / feitas) * 100
                 
-                # Efeito animado festivo para bom desempenho
                 if aproveitamento_bloco >= 80:
                     st.balloons()
                     st.success(f"🎉 SENSACIONAL! Aproveitamento de **{aproveitamento_bloco:.0f}%**! Você está indo muito bem!")
@@ -207,7 +205,6 @@ if menu_principal == "🏋️‍♂️ Executar Circuito":
                 else:
                     st.warning(f"💪 **{aproveitamento_bloco:.0f}%** de aproveitamento. É hora de registrar os erros nos flashcards e ajustar!")
 
-                # Salvar no Supabase
                 if st.session_state["user"] and supabase:
                     try:
                         dados = {
@@ -251,47 +248,4 @@ elif menu_principal == "📊 Painel de Desempenho":
                 if not dados:
                     st.info("📭 Nenhum bloco registrado ainda. Complete sua primeira série na tela do circuito!")
                 else:
-                    df = pd.DataFrame(dados)
-                    
-                    total_feitas = df["feitas"].sum()
-                    total_acertos = df["acertos"].sum()
-                    aproveitamento_geral = (total_acertos / total_feitas) * 100 if total_feitas > 0 else 0
-
-                    c1, c2, c3 = st.columns(3)
-                    c1.metric("📚 Questões Resolvidas", f"{total_feitas:,}")
-                    c2.metric("🎯 Total de Acertos", f"{total_acertos:,}")
-                    c3.metric("🔥 Rendimento Geral", f"{aproveitamento_geral:.1f}%")
-
-                    # Barra de progresso visual
-                    st.progress(min(int(aproveitamento_geral), 100))
-
-                    st.markdown("---")
-                    st.subheader("📊 Aproveitamento Por Disciplina")
-
-                    resumo_disc = df.groupby("disciplina")[["feitas", "acertos"]].sum().reset_index()
-                    resumo_disc["Aproveitamento (%)"] = (resumo_disc["acertos"] / resumo_disc["feitas"] * 100).round(1)
-                    resumo_disc = resumo_disc.sort_values(by="Aproveitamento (%)", ascending=False)
-
-                    st.dataframe(resumo_disc, use_container_width=True)
-
-                    st.markdown("### 💡 Diagnóstico de Desempenho")
-                    melhor = resumo_disc.iloc[0] if not resumo_disc.empty else None
-                    pior = resumo_disc.iloc[-1] if not resumo_disc.empty else None
-
-                    if melhor is not None and pior is not None:
-                        col_a, col_b = st.columns(2)
-                        with col_a:
-                            st.success(f"🏆 **Seu Maior Domínio:** `{melhor['disciplina']}`\n\nAproveitamento excelente de **{melhor['Aproveitamento (%)']}%**!")
-                        with col_b:
-                            st.error(f"⚠️ **Ponto de Atenção:** `{pior['disciplina']}`\n\nAproveitamento de **{pior['Aproveitamento (%)']}%**. Reforce os estudos e flashcards desta matéria!")
-
-            except Exception as e:
-                st.error(f"Erro ao carregar seu painel: {e}")
-
-
-# ==========================================
-# TELA 3: FLASHCARDS & RECORRÊNCIAS
-# ==========================================
-elif menu_principal == "🧠 Flashcards & Recorrências":
-    st.subheader("🧠 Caderno de Erros e Flashcards Inteligentes")
-    st.markdown("Cadastre seus erros em **3 níveis** e acompanhe os temas mais recorrentes para revisões
+                    df =
