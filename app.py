@@ -480,9 +480,9 @@ elif menu_principal == "Flashcards e Recorrências":
 else:
   st.subheader("Gerenciar Disciplinas e Ordem do Circuito")
   st.markdown(
-      "Adicione novas matérias ou altere a posição de cada disciplina"
-      " utilizando os botões de controle de ordem. As alterações são salvas"
-      " automaticamente na sua conta."
+      "Adicione novas matérias, remova ou **digite o número da nova posição"
+      " desejada** para cada disciplina. As alterações são salvas e atualizadas"
+      " automaticamente."
   )
 
   with st.expander("Adicionar Nova Disciplina", expanded=False):
@@ -500,43 +500,49 @@ else:
         st.warning("Esta disciplina já consta no circuito.")
 
   st.markdown("---")
-  st.subheader("📋 Ordem e Controle das Disciplinas")
+  st.subheader("📋 Reordenar por Número de Posição")
 
   if not st.session_state.disciplinas:
     st.warning("Nenhuma disciplina cadastrada.")
   else:
-    for idx, d in enumerate(st.session_state.disciplinas):
-      col_num, col_nome, col_subir, col_descer, col_remover = st.columns(
-          [0.8, 3.2, 1.3, 1.3, 1.4]
+    # Criamos um formulário para atualizar as posições digitadas de uma vez
+    with st.form("form_reordenar"):
+      novas_posicoes = {}
+      for idx, d in enumerate(st.session_state.disciplinas):
+        col_nome, col_input = st.columns([3, 1])
+        col_nome.write(f"**{d}**")
+        # Campo numérico para o aluno digitar a posição (1 até o total)
+        nova_posicoes[d] = col_input.number_input(
+            f"Pos {d}",
+            min_value=1,
+            max_value=len(st.session_state.disciplinas),
+            value=idx + 1,
+            step=1,
+            label_visibility="collapsed",
+        )
+
+      btn_atualizar_ordem = st.form_submit_button(
+          "Atualizar Ordem do Circuito 🎯"
       )
 
-      col_num.markdown(f"**#{idx + 1}**")
-      col_nome.write(f"**{d}**")
+      if btn_atualizar_ordem:
+        # Ordena a lista com base no número digitado pelo aluno
+        disciplinas_ordenadas = sorted(
+            st.session_state.disciplinas, key=lambda x: novas_posicoes[x]
+        )
+        st.session_state.disciplinas = disciplinas_ordenadas
+        st.session_state.indice_atual = 0
+        salvar_preferencias_usuario()
+        st.success("Ordem atualizada e salva com sucesso na nuvem!")
+        st.rerun()
 
-      if col_subir.button("⬆️ Subir", key=f"up_{idx}"):
-        if idx > 0:
-          st.session_state.disciplinas[idx], st.session_state.disciplinas[
-              idx - 1
-          ] = (
-              st.session_state.disciplinas[idx - 1],
-              st.session_state.disciplinas[idx],
-          )
-          salvar_preferencias_usuario()
-          st.rerun()
-
-      if col_descer.button("⬇️ Descer", key=f"down_{idx}"):
-        if idx < len(st.session_state.disciplinas) - 1:
-          st.session_state.disciplinas[idx], st.session_state.disciplinas[
-              idx + 1
-          ] = (
-              st.session_state.disciplinas[idx + 1],
-              st.session_state.disciplinas[idx],
-          )
-          salvar_preferencias_usuario()
-          st.rerun()
-
-      if col_remover.button("🗑️ Excluir", key=f"rem_{idx}"):
-        st.session_state.disciplinas.pop(idx)
+    st.markdown("---")
+    st.subheader("🗑️ Remover Disciplinas")
+    for idx, d in enumerate(list(st.session_state.disciplinas)):
+      col_d_nome, col_d_btn = st.columns([4, 1])
+      col_d_nome.write(f"• {d}")
+      if col_d_btn.button("Excluir", key=f"rem_{idx}"):
+        st.session_state.disciplinas.remove(d)
         if st.session_state.disciplinas:
           st.session_state.indice_atual = st.session_state.indice_atual % len(
               st.session_state.disciplinas
@@ -544,4 +550,5 @@ else:
         else:
           st.session_state.indice_atual = 0
         salvar_preferencias_usuario()
+        st.success(f"'{d}' removida com sucesso!")
         st.rerun()
