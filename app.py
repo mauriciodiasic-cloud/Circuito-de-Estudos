@@ -18,7 +18,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# --- ESTILIZAÇÃO CSS CUSTOMIZADA (VISUAL ALEGRE, MODERNO E ANIMADO) ---
+# --- ESTILIZAÇÃO CSS CUSTOMIZADA ---
 st.markdown("""
     <style>
     /* Fundo e tipografia geral */
@@ -105,11 +105,42 @@ if "user" not in st.session_state:
     st.session_state["user"] = None
 
 if "nome_preferido" not in st.session_state:
-    st.session_state["nome_preferido"] = "Concursando"
+    st.session_state["nome_preferido"] = None
+
+if "abrir_popup_nome" not in st.session_state:
+    st.session_state["abrir_popup_nome"] = True
 
 # Ajuste preventivo de índice para evitar erros de limites
 if st.session_state.disciplinas:
     st.session_state.indice_atual = st.session_state.indice_atual % len(st.session_state.disciplinas)
+
+# --- POPUP MODAL PARA DEFINIR O NOME ---
+@st.dialog("👋 Boas-vindas ao Circuito de Estudos!")
+def modal_definir_nome():
+    st.write("Como você gostaria de ser chamado(a) durante a sua preparação?")
+    nome_digitado = st.text_input("Seu nome ou apelido:", placeholder="Ex: Dr. Silva, Maria, DPE-RJ...")
+    
+    if st.button("Confirmar e Começar 🚀", use_container_width=True):
+        if nome_digitado.strip():
+            st.session_state["nome_preferido"] = nome_digitado.strip()
+            st.session_state["abrir_popup_nome"] = False
+            
+            # Se estiver logado, atualiza o nome no perfil do Supabase
+            if st.session_state["user"] and supabase:
+                try:
+                    supabase.auth.update_user({"data": {"full_name": nome_digitado.strip()}})
+                except:
+                    pass
+            st.rerun()
+        else:
+            st.error("Por favor, digite um nome ou apelido para continuar.")
+
+# Abrir popup se ainda não tiver nome definido
+if st.session_state["nome_preferido"] is None and st.session_state["abrir_popup_nome"]:
+    modal_definir_nome()
+
+# Definição do nome do aluno
+nome_aluno = st.session_state.get("nome_preferido") or "Concursando"
 
 # --- NAVEGAÇÃO E AUTENTICAÇÃO NA BARRA LATERAL ---
 st.sidebar.title("📌 Menu Principal")
@@ -192,22 +223,13 @@ else:
                 else:
                     st.sidebar.error("Digite o seu e-mail cadastrado.")
     else:
-        user_metadata = getattr(st.session_state["user"], "user_metadata", {}) or {}
-        nome_exibicao = user_metadata.get("full_name", st.session_state.get("nome_preferido", "Concursando"))
-        
-        st.sidebar.success(f"⚡ Conectado como: **{nome_exibicao}**")
+        st.sidebar.success(f"⚡ Conectado como: **{nome_aluno}**")
         if st.sidebar.button("Sair da Conta 👋"):
             supabase.auth.sign_out()
             st.session_state["user"] = None
-            st.session_state["nome_preferido"] = "Concursando"
+            st.session_state["nome_preferido"] = None
+            st.session_state["abrir_popup_nome"] = True
             st.rerun()
-
-# --- OBTER NOME DO USUÁRIO ---
-if st.session_state["user"]:
-    user_meta = getattr(st.session_state["user"], "user_metadata", {}) or {}
-    nome_aluno = user_meta.get("full_name", st.session_state.get("nome_preferido", "Futuro(a) Defensor(a)"))
-else:
-    nome_aluno = st.session_state.get("nome_preferido", "Concursando")
 
 # --- FRASES MOTIVACIONAIS PERSONALIZADAS ---
 FRASES_MOTIVACIONAIS = [
@@ -241,5 +263,106 @@ if menu_principal == "🏠 Início":
         """)
         
     with col_config:
-        st.subheader("👤 Como prefere ser chamado(a)?")
-        novo_nome = st.text
+        st.subheader("👤 Seu Nome no Aplicativo")
+        st.info(f"Atualmente você está cadastrado(a) como: **{nome_aluno}**")
+        if st.button("Alterar Apelido / Nome ✏️"):
+            st.session_state["nome_preferido"] = None
+            st.session_state["abrir_popup_nome"] = True
+            st.rerun()
+
+    st.markdown("---")
+    st.subheader("⚡ Atalhos Rápidos")
+    col_a, col_b, col_c = st.columns(3)
+    
+    with col_a:
+        st.info("🏋️‍♂️ **Pronto para treinar?**\n\nInicie ou continue o seu circuito de questões.")
+    with col_b:
+        st.success("📊 **Quer ver sua evolução?**\n\nConfira suas métricas e gráficos de desempenho.")
+    with col_c:
+        st.warning("🧠 **Registrar uma falha?**\n\nAlimente o seu caderno de erros e acompanhe os assuntos mais frequentes.")
+
+
+# ==========================================
+# TELA 1: EXECUTAR CIRCUITO
+# ==========================================
+elif menu_principal == "🏋️‍♂️ Executar Circuito":
+    st.title(f"⚡ Circuito de Estudos do(a) {nome_aluno}")
+    st.caption(f"💬 *{random.choice(FRASES_MOTIVACIONAIS)}*")
+
+    if st.session_state["user"] is None:
+        st.warning("⚠️ Você está estudando no modo visitante. Faça login na barra lateral para salvar seu progresso permanentemente na nuvem!")
+
+    if st.session_state.disciplinas:
+        idx = st.session_state.indice_atual % len(st.session_state.disciplinas)
+        disc_atual = st.session_state.disciplinas[idx]
+        serie_atual = st.session_state.series_concluidas.get(disc_atual, 1)
+
+        st.info(f"🎯 **Matéria / Bloco Atual:** `{disc_atual}`  |  🔥 **Série:** `{serie_atual}`")
+
+        with st.form("form_bloco"):
+            st.subheader("📝 Registrar Bloco de Questões Resolvidas")
+            col1, col2 = st.columns(2)
+            with col1:
+                feitas = st.number_input("Questões Feitas", min_value=1, value=15, step=1)
+            with col2:
+                acertos = st.number_input("Questões Acertadas", min_value=0, max_value=feitas, value=12, step=1)
+
+            enviar_bloco = st.form_submit_button("✅ Concluir Série e Avançar! 🚀")
+
+            if enviar_bloco:
+                aproveitamento_bloco = (acertos / feitas) * 100
+                
+                if aproveitamento_bloco >= 80:
+                    st.balloons()
+                    st.success(f"🎉 SENSACIONAL, {nome_aluno}! Aproveitamento de **{aproveitamento_bloco:.0f}%**! Você está voando!")
+                elif aproveitamento_bloco >= 60:
+                    st.success(f"👏 Muito bem, {nome_aluno}! **{aproveitamento_bloco:.0f}%** de aproveitamento. Mantenha o ritmo!")
+                else:
+                    st.warning(f"💪 **{aproveitamento_bloco:.0f}%** de aproveitamento. É hora de registrar os erros nos flashcards e ajustar, {nome_aluno}!")
+
+                if st.session_state["user"] and supabase:
+                    try:
+                        dados = {
+                            "user_id": st.session_state["user"].id,
+                            "disciplina": disc_atual,
+                            "feitas": feitas,
+                            "acertos": acertos
+                        }
+                        supabase.table("historico_estudos").insert(dados).execute()
+                    except Exception as e:
+                        st.error(f"Erro ao salvar dados: {e}")
+
+                st.session_state.series_concluidas[disc_atual] = serie_atual + 1
+                st.session_state.indice_atual = (idx + 1) % len(st.session_state.disciplinas)
+                st.rerun()
+
+        st.markdown("---")
+        st.markdown("### 📋 Sequência do Seu Circuito")
+        for i, d in enumerate(st.session_state.disciplinas):
+            marcador = "🔥 [ESTUDAR AGORA]" if i == (st.session_state.indice_atual % len(st.session_state.disciplinas)) else "✅"
+            st.text(f"{marcador} {d} — Série {st.session_state.series_concluidas.get(d, 1)}")
+
+    else:
+        st.warning("Adicione disciplinas na aba de configurações para iniciar seu circuito de estudos!")
+
+
+# ==========================================
+# TELA 2: PAINEL DE DESEMPENHO
+# ==========================================
+elif menu_principal == "📊 Painel de Desempenho":
+    st.subheader(f"📈 Painel de Evolução — {nome_aluno}")
+
+    if st.session_state["user"] is None:
+        st.warning("⚠️ Faça login na barra lateral para carregar seu painel com histórico completo.")
+    else:
+        if supabase:
+            try:
+                res = supabase.table("historico_estudos").select("*").eq("user_id", st.session_state["user"].id).execute()
+                dados = res.data
+
+                if not dados:
+                    st.info(f"📭 Nenhum bloco registrado ainda, {nome_aluno}. Complete sua primeira série na tela do circuito!")
+                else:
+                    df = pd.DataFrame(dados)
+                    
+                    total_feitas = df["feitas"].sum
