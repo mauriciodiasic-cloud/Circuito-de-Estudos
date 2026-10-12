@@ -36,4 +36,18 @@ if menu_principal == "📰 Radar Jurídico & Notícias":
             feed_stf = feedparser.parse(feed_stf_url)
             if feed_stf.entries:
                 for entry in feed_stf.entries[:8]:  # Exibe os 8 artigos mais recentes
-                    with st.expander(f"⚖️ {entry.title
+                    with st.expander(f"⚖️ {entry.title}"):
+                        st.write(f"**Publicado em:** {entry.get('published', 'Data não informada')}")
+                        st.write(entry.get('summary', 'Sem resumo disponível.'))
+                        st.markdown(f"[🔗 Ler matéria completa no Portal do STF]({entry.link})")
+            else:
+                st.info("Não foi possível carregar as notícias do STF no momento.")
+        except Exception:
+            st.warning("O serviço de RSS do STF está temporariamente indisponível.")
+
+    # 2. ABA STJ
+    with tab_stj:
+        st.subheader("📌 Últimas do Superior Tribunal de Justiça (STJ)")
+        feed_stj_url = "https://www.stj.jus.br/sites/portalp/RSS/Noticias"
+        
+        try:
