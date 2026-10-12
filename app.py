@@ -36,7 +36,7 @@ st.markdown(
         font-weight: bold !important;
         border-radius: 12px !important;
         border: none !important;
-        padding: 10px 24px !important;
+        padding: 8px 16px !important;
     }
     </style>
 """,
@@ -480,9 +480,9 @@ elif menu_principal == "Flashcards e Recorrências":
 else:
   st.subheader("Gerenciar Disciplinas e Ordem do Circuito")
   st.markdown(
-      "Adicione novas matérias, remova ou **reordene** as disciplinas"
-      " selecionando a nova sequência desejada. Tudo é guardado"
-      " automaticamente na nuvem."
+      "Adicione novas matérias ou altere a posição de cada disciplina"
+      " utilizando os botões de controle de ordem. As alterações são salvas"
+      " automaticamente na sua conta."
   )
 
   with st.expander("Adicionar Nova Disciplina", expanded=False):
@@ -500,42 +500,48 @@ else:
         st.warning("Esta disciplina já consta no circuito.")
 
   st.markdown("---")
-  st.subheader("🔄 Reordenar Disciplinas Rapidamente")
-  st.markdown(
-      "Clique nos itens abaixo na ordem exata em que deseja estudá-los ou"
-      " remova os que não quiser:"
-  )
+  st.subheader("📋 Ordem e Controle das Disciplinas")
 
-  nova_ordem = st.multiselect(
-      "Sequência do Circuito:",
-      options=st.session_state.disciplinas,
-      default=st.session_state.disciplinas,
-  )
+  if not st.session_state.disciplinas:
+    st.warning("Nenhuma disciplina cadastrada.")
+  else:
+    for idx, d in enumerate(st.session_state.disciplinas):
+      col_num, col_nome, col_subir, col_descer, col_remover = st.columns(
+          [0.8, 3.2, 1.3, 1.3, 1.4]
+      )
 
-  col_btn1, col_btn2 = st.columns(2)
-  with col_btn1:
-    if st.button("Salvar Nova Ordem 🎯"):
-      if len(nova_ordem) > 0:
-        st.session_state.disciplinas = nova_ordem
-        st.session_state.indice_atual = 0
+      col_num.markdown(f"**#{idx + 1}**")
+      col_nome.write(f"**{d}**")
+
+      if col_subir.button("⬆️ Subir", key=f"up_{idx}"):
+        if idx > 0:
+          st.session_state.disciplinas[idx], st.session_state.disciplinas[
+              idx - 1
+          ] = (
+              st.session_state.disciplinas[idx - 1],
+              st.session_state.disciplinas[idx],
+          )
+          salvar_preferencias_usuario()
+          st.rerun()
+
+      if col_descer.button("⬇️ Descer", key=f"down_{idx}"):
+        if idx < len(st.session_state.disciplinas) - 1:
+          st.session_state.disciplinas[idx], st.session_state.disciplinas[
+              idx + 1
+          ] = (
+              st.session_state.disciplinas[idx + 1],
+              st.session_state.disciplinas[idx],
+          )
+          salvar_preferencias_usuario()
+          st.rerun()
+
+      if col_remover.button("🗑️ Excluir", key=f"rem_{idx}"):
+        st.session_state.disciplinas.pop(idx)
+        if st.session_state.disciplinas:
+          st.session_state.indice_atual = st.session_state.indice_atual % len(
+              st.session_state.disciplinas
+          )
+        else:
+          st.session_state.indice_atual = 0
         salvar_preferencias_usuario()
-        st.success("Nova ordem salva com sucesso na sua conta!")
         st.rerun()
-      else:
-        st.error("O circuito precisa ter pelo menos uma disciplina.")
-
-  with col_btn2:
-    if st.button("Restaurar Padrão 🔄"):
-      st.session_state.disciplinas = DISCIPLINAS_PADRAO.copy()
-      st.session_state.indice_atual = 0
-      salvar_preferencias_usuario()
-      st.success("Ordem padrão restaurada e salva!")
-      st.rerun()
-
-  st.markdown("---")
-  st.subheader("📋 Lista Atual de Disciplinas")
-  for idx, d in enumerate(st.session_state.disciplinas):
-    st.text(
-        f"#{idx + 1} — {d} (Série:"
-        f" {st.session_state.series_concluidas.get(d, 1)})"
-    )
