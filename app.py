@@ -166,24 +166,4 @@ else:
         aba_auth = st.sidebar.radio("Sua Conta:", ["Entrar", "Criar Conta", "Esqueci a Senha"])
         
         if aba_auth == "Criar Conta":
-            nome_input = st.sidebar.text_input("Seu Nome ou Apelido")
-            email_input = st.sidebar.text_input("E-mail")
-            senha_input = st.sidebar.text_input("Senha", type="password")
-            
-            if st.sidebar.button("Cadastrar 🚀"):
-                if not nome_input.strip():
-                    st.sidebar.error("Por favor, informe o seu nome para personalizar seus estudos.")
-                elif len(senha_input) < 6:
-                    st.sidebar.error("A senha deve ter pelo menos 6 caracteres.")
-                else:
-                    try:
-                        res = supabase.auth.sign_up({
-                            "email": email_input, 
-                            "password": senha_input,
-                            "options": {
-                                "data": {
-                                    "full_name": nome_input.strip()
-                                }
-                            }
-                        })
-                        st.session_state["nome_preferido"] = nome_input.strip
+            nome_input = st.sidebar.text
