@@ -5,11 +5,14 @@ import streamlit as st
 # ==========================================
 # CONFIGURAÇÃO DA PÁGINA
 # ==========================================
-st.set_page_config(page_title="Circuito de Estudos", page_icon="⚖️", layout="wide")
+st.set_page_config(
+    page_title="Circuito de Estudos", page_icon="⚖️", layout="wide"
+)
 
 # ==========================================
-# MENU PRINCIPAL
+# MENU PRINCIPAL (Sidebar)
 # ==========================================
+st.sidebar.title("📌 Menu Principal")
 opcoes_menu = [
     "🏠 Início",
     "🏋️‍♂️ Executar Circuito",
@@ -19,15 +22,24 @@ opcoes_menu = [
     "⚙️ Gerenciar Disciplinas",
 ]
 
-menu_principal = st.sidebar.radio("Navegue pelas telas:", opcoes_menu)
+# O parâmetro index=0 garante que abre sempre na tela de Início sem falhas
+menu_principal = st.sidebar.radio(
+    "Navegue pelas telas:", opcoes_menu, index=0
+)
 
 # ==========================================
 # TELA: 🏠 INÍCIO
 # ==========================================
 if "Início" in menu_principal:
-  st.title("🏠 Página Inicial")
-  st.write("Bem-vindo ao seu painel central de estudos e rotina!")
-  # Coloque aqui o conteúdo da sua tela de Início
+  st.title("🏠 Página Inicial — Circuito de Estudos")
+  st.write(
+      "Seja bem-vindo ao seu painel central! Utilize o menu à esquerda para"
+      " navegar entre as ferramentas."
+  )
+  st.info(
+      "Dica: Selecione **Radar Jurídico & Notícias** no menu lateral para ver"
+      " as últimas atualizações do STF e STJ em tempo real."
+  )
 
 # ==========================================
 # TELA: 🏋️‍♂️ EXECUTAR CIRCUITO
@@ -54,7 +66,7 @@ elif "Flashcards & Recorrências" in menu_principal:
 # TELA: 📰 RADAR JURÍDICO & NOTÍCIAS
 # ==========================================
 elif "Radar Jurídico" in menu_principal:
-  nome_aluno = "Mauricio"  # Ajuste conforme sua lógica
+  nome_aluno = "Mauricio"
   st.title(f"📰 Radar Jurídico & Jurisprudência — {nome_aluno}")
   st.caption(
       "Acompanhe em tempo real as últimas notícias, destaques e julgados do"
@@ -157,8 +169,3 @@ elif "Radar Jurídico" in menu_principal:
 elif "Gerenciar Disciplinas" in menu_principal:
   st.title("⚙️ Gerenciar Disciplinas")
   st.write("Adicione ou edite as disciplinas do seu ciclo de estudos.")
-
-# Caso ocorra alguma exceção desconhecida
-else:
-  st.title(menu_principal)
-  st.info(f"Conteúdo da tela **{menu_principal}** em desenvolvimento.")
