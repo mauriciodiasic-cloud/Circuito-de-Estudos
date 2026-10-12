@@ -354,45 +354,4 @@ elif menu_principal == "Executar Circuito":
 
     if enviar_bloco:
       aproveitamento_bloco = (acertos / feitas) * 100
-      st.success(f"Parabéns! Aproveitamento de **{aproveitamento_bloco:.0f}%**!")
-
-      if st.session_state["user"] and supabase:
-        try:
-          dados = {
-              "user_id": st.session_state["user"].id,
-              "disciplina": disc_atual,
-              "feitas": feitas,
-              "acertos": acertos,
-              "created_at": datetime.now().isoformat(),
-          }
-          supabase.table("historico_estudos").insert(dados).execute()
-        except Exception as e:
-          st.error(f"Erro ao salvar dados: {e}")
-
-      st.session_state.series_concluidas[disc_atual] = serie_atual + 1
-      st.session_state.indice_atual = (idx + 1) % len(
-          st.session_state.disciplinas
-      )
-      salvar_preferencias_usuario()
-      st.rerun()
-
-    st.markdown("---")
-    st.markdown("### Sequência do Circuito")
-    for i, d in enumerate(st.session_state.disciplinas):
-      marcador = (
-          "[ESTUDAR AGORA]"
-          if i
-          == (st.session_state.indice_atual % len(st.session_state.disciplinas))
-          else "[OK]"
-      )
-      st.text(
-          f"{marcador} {d} — Série"
-          f" {st.session_state.series_concluidas.get(d, 1)}"
-      )
-
-
-# ==========================================
-# TELA: PAINEL DE DESEMPENHO
-# ==========================================
-elif menu_principal == "Painel de Desempenho":
-  st.subheader(f
+      st.success(f"Parabéns! Aproveitamento de **{aproveitamento_bloco
