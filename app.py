@@ -2,10 +2,20 @@ import streamlit as st
 import pandas as pd
 from supabase import create_client, Client
 
+# --- CONFIGURAÇÃO DO PWA (Para instalar no Android) ---
+st.set_page_config(page_title="Circuito de Estudos para Concursos", page_icon="🏋️‍♂️", layout="wide")
+
+st.markdown(
+    """
+    <link rel="manifest" href="app/static/manifest.json">
+    <meta name="theme-color" content="#0e1117">
+    """,
+    unsafe_allow_html=True
+)
+
 # --- CONFIGURAÇÃO DO SUPABASE ---
-# Substitua pelos seus dados reais do Supabase
 SUPABASE_URL = "https://hweawyyqnzavrhejaotv.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3ZWF3eXlxbnphdnJoZWphb3R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3NjgwMDQsImV4cCI6MjEwNzM0NDAwNH0.2mgHfTLJCy8fkId_w5yP6EFDP-cYWM0wM6ZpvHrIhpk"
+SUPABASE_KEY = "COLE_AQUI_A_SUA_ANON_KEY"  # <-- Cole a sua anon key aqui entre as aspas
 
 @st.cache_resource
 def init_supabase():
@@ -16,13 +26,10 @@ def init_supabase():
 
 supabase: Client = init_supabase()
 
-st.set_page_config(page_title="Circuito de Estudos para Concursos", page_icon="🏋️‍♂️", layout="wide")
-
 # --- AUTENTICAÇÃO / LOGIN ---
 st.sidebar.title("🔑 Acesso do Usuário")
 
 if "user" not in st.session_state:
-    st.session_erros = []
     st.session_state["user"] = None
 
 if supabase is None:
@@ -61,7 +68,7 @@ else:
 st.title("🏋️‍♂️ Circuito de Estudos para Concursos")
 st.markdown("Gerencie suas rodadas de exercícios em formato de **séries de academia** para manter o ritmo e a alta performance.")
 
-# Se o usuário não estiver logado, avisa
+# Aviso se não estiver logado
 if st.session_state["user"] is None:
     st.warning("⚠️ Faça login na barra lateral para salvar o seu progresso de forma permanente na nuvem.")
 
