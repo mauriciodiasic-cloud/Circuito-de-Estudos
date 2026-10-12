@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import random
 import pandas as pd
 import streamlit as st
@@ -361,6 +362,7 @@ elif menu_principal == "Executar Circuito":
               "disciplina": disc_atual,
               "feitas": feitas,
               "acertos": acertos,
+              "created_at": datetime.now().isoformat(),
           }
           supabase.table("historico_estudos").insert(dados).execute()
         except Exception as e:
@@ -411,28 +413,82 @@ elif menu_principal == "Painel de Desempenho":
           st.info("Nenhum bloco registrado ainda.")
         else:
           df = pd.DataFrame(dados)
+          df["created_at"] = pd.to_datetime(df["created_at"])
+
           total_feitas = df["feitas"].sum()
           total_acertos = df["acertos"].sum()
           aproveitamento_geral = (
               (total_acertos / total_feitas) * 100 if total_feitas > 0 else 0
           )
 
-          c1, c2, c3 = st.columns(3)
+          # Cálculo dos últimos 7 dias
+          data_limite_7d = datetime.now() - timedelta(days=7)
+          df_7d = df[df["created_at"] >= data_limite_7d]
+          feitas_7d = df_7d["feitas"].sum() if not df_7d.empty else 0
+          acertos_7d = df_7d["acertos"].sum() if not df_7d.empty else 0
+          aproveitamento_7d = (
+              (acertos_7d / feitas_7d) * 100 if feitas_7d > 0 else 0
+          )
+
+          c1, c2, c3, c4 = st.columns(4)
           c1.metric("Questões Resolvidas", f"{total_feitas:,}")
           c2.metric("Total de Acertos", f"{total_acertos:,}")
           c3.metric("Rendimento Geral", f"{aproveitamento_geral:.1f}%")
+          c4.metric("Rendimento (Últimos 7 dias)", f"{aproveitamento_7d:.1f}%")
 
           st.markdown("---")
-          st.subheader("Aproveitamento Por Disciplina")
-          resumo_disc = (
-              df.groupby("disciplina")[["feitas", "acertos"]]
-              .sum()
-              .reset_index()
+          col_graf1, col_graf2 = st.columns(2)
+
+          with col_graf1:
+            st.subheader("📊 Aproveitamento Geral Por Disciplina (%)")
+            resumo_disc = (
+                df.groupby("disciplina")[["feitas", "acertos"]]
+                .sum()
+                .reset_index()
+            )
+            resumo_disc["Aproveitamento (%)"] = (
+                resumo_disc["acertos"] / resumo_disc["feitas"] * 100
+            ).round(1)
+            st.bar_chart(
+                resumo_disc.set_index("disciplina")["Aproveitamento (%)"]
+            )
+
+          with col_graf2:
+            st.subheader("📅 Desempenho nos Últimos 7 Dias (%)")
+            if not df_7d.empty:
+              resumo_7d = (
+                  df_7d.groupby("disciplina")[["feitas", "acertos"]]
+                  .sum()
+                  .reset_index()
+              )
+              resumo_7d["Aproveitamento (%)"] = (
+                  resumo_7d["acertos"] / resumo_7d["feitas"] * 100
+              ).round(1)
+              st.bar_chart(
+                  resumo_7d.set_index("disciplina")["Aproveitamento (%)"]
+              )
+            else:
+              st.info("Nenhum exercício registrado nos últimos 7 dias.")
+
+          st.markdown("---")
+          st.subheader("📋 Tabela Detalhada de Histórico")
+          df_exibicao = df.copy()
+          df_exibicao["Data"] = df_exibicao["created_at"].dt.strftime(
+              "%d/%m/%Y %H:%M"
           )
-          resumo_disc["Aproveitamento (%)"] = (
-              resumo_disc["acertos"] / resumo_disc["feitas"] * 100
+          df_exibicao["Aproveitamento (%)"] = (
+              df_exibicao["acertos"] / df_exibicao["feitas"] * 100
           ).round(1)
-          st.dataframe(resumo_disc, use_container_width=True)
+          st.dataframe(
+              df_exibicao[[
+                  "Data",
+                  "disciplina",
+                  "feitas",
+                  "acertos",
+                  "Aproveitamento (%)",
+              ]],
+              use_container_width=True,
+          )
 
       except Exception as e:
         st.error(f"Erro ao carregar painel: {e}")
@@ -447,7 +503,7 @@ elif menu_principal == "Flashcards e Recorrências":
   if st.session_state["user"] is None:
     st.warning("Faça login na barra lateral para salvar flashcards na nuvem.")
   else:
-    with st.expander("Adicionar Novo Flashcard", expanded=True):
+    with st.expander("Adicionar Novo Flashcard", expanded=False):
       with st.form("form_fc"):
         disc_escolhida = st.selectbox(
             "Disciplina:", st.session_state.disciplinas
@@ -466,6 +522,8 @@ elif menu_principal == "Flashcards e Recorrências":
                 "assunto": assunto_livre.strip(),
                 "pergunta_erro": assunto_livre.strip(),
                 "resposta_fundamento": comentario_erro,
+                "created_at": datetime.now().isoformat(),
+                "resolvido": False,
             }
             supabase.table("flashcards_erros").insert(dados_fc).execute()
             st.success("Flashcard registrado com sucesso!")
@@ -480,6 +538,7 @@ elif menu_principal == "Flashcards e Recorrências":
           supabase.table("flashcards_erros")
           .select("*")
           .eq("user_id", st.session_state["user"].id)
+          .order("created_at", desc=True)
           .execute()
       )
       lista_fc = res_fc.data
@@ -487,13 +546,39 @@ elif menu_principal == "Flashcards e Recorrências":
         st.info("Nenhum flashcard cadastrado ainda.")
       else:
         for item in lista_fc:
-          with st.expander(
-              f"[{item.get('disciplina')}] {item.get('assunto')}"
-          ):
+          card_id = item.get("id")
+          is_resolvido = item.get("resolvido", False)
+          dt_str = item.get("created_at", "")
+          try:
+            dt_fmt = datetime.fromisoformat(
+                dt_str.replace("Z", "+00:00")
+            ).strftime("%d/%m/%Y %H:%M")
+          except Exception:
+            dt_fmt = "Data Indisponível"
+
+          status_label = "✅ [RESOLVIDO]" if is_resolvido else "📌 [PENDENTE]"
+          titulo_card = f"{status_label} [{item.get('disciplina')}] {item.get('assunto')} — Criado em: {dt_fmt}"
+
+          with st.expander(titulo_card):
             st.write(
                 f"**Fundamento / Comentário:**"
                 f" {item.get('resposta_fundamento')}"
             )
+
+            # Checkbox estilo caixa de e-mail para marcar como resolvido
+            check_state = st.checkbox(
+                "Marcar como Resolvido",
+                value=is_resolvido,
+                key=f"check_fc_{card_id}",
+            )
+            if check_state != is_resolvido:
+              try:
+                supabase.table("flashcards_erros").update(
+                    {"resolvido": check_state}
+                ).eq("id", card_id).execute()
+                st.rerun()
+              except Exception as e:
+                st.error(f"Erro ao atualizar status: {e}")
     except Exception:
       st.info("Caderno de erros pronto para uso.")
 
