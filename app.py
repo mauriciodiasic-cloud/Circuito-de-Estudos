@@ -323,4 +323,4 @@ if menu_principal == "Início":
 # TELA: EXECUTAR CIRCUITO
 # ==========================================
 elif menu_principal == "Executar Circuito":
-  st.title(f"Circuito de Estudos - {nome
+  st.
