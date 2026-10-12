@@ -6,7 +6,7 @@ from supabase import Client, create_client
 # --- CONFIGURACAO DA PAGINA E PWA ---
 st.set_page_config(
     page_title="Circuito de Estudos - Rumo a Aprovacao",
-    page_icon="F",
+    page_icon="🔥",
     layout="wide",
 )
 
@@ -107,7 +107,7 @@ if supabase and st.session_state["user"] is None:
           "full_name",
           getattr(current_session.user, "email", "Concursando").split("@")[0],
       )
-  except Exception as e:
+  except Exception:
     pass
 
 if st.session_state.disciplinas:
@@ -185,7 +185,7 @@ else:
 
           st.sidebar.success(f"Bem-vindo(a) de volta, {nome_usuario}!")
           st.rerun()
-        except Exception as e:
+        except Exception:
           st.sidebar.error("E-mail ou senha incorretos. Tente novamente.")
 
     elif aba_auth == "Esqueci a Senha":
@@ -229,12 +229,13 @@ if menu_principal == "Inicio":
 
   with col_bem_vindo:
     st.subheader("Bem-vindo(a) ao seu Circuito de Estudos!")
-    st.write("""
-        Plataforma desenvolvida para potencializar a sua preparacao para concursos publicos:
-        * Circuito Rotativo: Mantenha um ritmo dinâmico passando por todas as disciplinas.
-        * Painel Analitico: Acompanhe a sua porcentagem de acertos em tempo real.
-        * Caderno de Erros: Registre seus erros para identificar gargalos de estudo.
-        """)
+    st.write(
+        "Plataforma desenvolvida para potencializar a sua preparacao para"
+        " concursos publicos:\n- Circuito Rotativo: Mantenha um ritmo dinâmico"
+        " passando por todas as disciplinas.\n- Painel Analitico: Acompanhe a"
+        " sua porcentagem de acertos em tempo real.\n- Caderno de Erros:"
+        " Registre seus erros para identificar gargalos de estudo."
+    )
 
   with col_config:
     st.subheader("Como quer ser chamado(a)?")
@@ -248,9 +249,9 @@ if menu_principal == "Inicio":
             supabase.auth.update_user(
                 {"data": {"full_name": novo_nome.strip()}}
             )
-          except Exception as e:
+          except Exception:
             pass
-        st.success(f"Nome atualizado com sucesso!")
+        st.success("Nome atualizado com sucesso!")
         st.rerun()
       else:
         st.error("Digite um nome valido.")
@@ -281,28 +282,3 @@ elif menu_principal == "Executar Circuito":
       with col1:
         feitas = st.number_input(
             "Questoes Feitas", min_value=1, value=15, step=1
-        )
-      with col2:
-        acertos = st.number_input(
-            "Questoes Acertadas", min_value=0, max_value=feitas, value=12, step=1
-        )
-
-      enviar_bloco = st.form_submit_button("Concluir Serie e Avancar")
-
-      if enviar_bloco:
-        aproveitamento_bloco = (acertos / feitas) * 100
-        st.success(
-            f"Parabens! Aproveitamento de **{aproveitamento_bloco:.0f}%**!"
-        )
-
-        if st.session_state["user"] and supabase:
-          try:
-            dados = {
-                "user_id": st.session_state["user"].id,
-                "disciplina": disc_atual,
-                "feitas": feitas,
-                "acertos": acertos,
-            }
-            supabase.table("historico_estudos").insert(dados).execute()
-          except Exception as e:
-            st.error(f"Erro
