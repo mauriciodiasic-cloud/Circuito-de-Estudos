@@ -70,7 +70,7 @@ else:
 
 # --- MENU DE NAVEGAÇÃO PRINCIPAL ---
 st.title("⚖️ Circuito de Estudos de Alto Rendimento")
-st.markdown("*Foco na aprovação: Disciplina, volume de questões, percentual de acertos, painel e flashcards independentes.*")
+st.markdown("*Foco na aprovação: Disciplina, volume de questões, percentual de acertos, painel e flashcards estruturados.*")
 
 menu_principal = st.radio(
     "Navegação", 
@@ -128,8 +128,7 @@ if menu_principal == "🏋️‍♂️ Executar Circuito":
                             "user_id": st.session_state["user"].id,
                             "disciplina": disc_atual,
                             "feitas": feitas,
-                            "acertos": acertos,
-                            "erros": None
+                            "acertos": acertos
                         }
                         supabase.table("historico_estudos").insert(dados).execute()
                         st.success("🎯 Desempenho gravado com sucesso na nuvem!")
@@ -205,43 +204,49 @@ elif menu_principal == "📊 Painel de Desempenho":
 
 
 # ==========================================
-# ABA 3: FLASHCARDS & CADERNO DE ERROS (INDEPENDENTE)
+# ABA 3: FLASHCARDS & CADERNO DE ERROS (3 NÍVEIS)
 # ==========================================
 elif menu_principal == "🧠 Flashcards & Caderno de Erros":
-    st.subheader("🧠 Gestão Independente de Flashcards e Caderno de Erros")
-    st.markdown("Cadastre de forma livre os pontos de atenção, súmulas, jurisprudências ou pegadinhas que errou em simulados externos, e consulte-os por disciplina.")
+    st.subheader("🧠 Caderno de Erros & Flashcards (3 Níveis)")
+    st.markdown("Organize suas revisões com base em **Disciplina** (escolha rápida), **Assunto** (texto livre) e o **Comentário** detalhado do erro.")
 
     if st.session_state["user"] is None:
         st.warning("⚠️ Faça login na barra lateral para criar e sincronizar os seus flashcards na nuvem.")
     else:
-        # Seção de Cadastro Independente
+        # Formulário de Cadastro em 3 Níveis
         with st.expander("➕ Adicionar Novo Flashcard / Erro", expanded=True):
-            with st.form("form_flashcard"):
-                disc_fc = st.selectbox("Disciplina:", st.session_state.disciplinas)
-                pergunta_fc = st.text_input("Pegadinha / Pergunta / Tema do Erro:", placeholder="Ex: Prazo para embargos infringentes no CPC...")
-                resposta_fc = st.text_area("Explicação / Fundamento Legal / Jurisprudência correta:", placeholder="Ex: Art. 1.009 do CPC... Súmula X do STJ...")
+            with st.form("form_flashcard_3niveis"):
+                # Nível 1: Disciplina (Escolha dentre as cadastradas)
+                disc_escolhida = st.selectbox("1️⃣ Nível - Disciplina:", st.session_state.disciplinas)
+                
+                # Nível 2: Assunto (Escrita livre)
+                assunto_livre = st.text_input("2️⃣ Nível - Assunto:", placeholder="Ex: Prisão Preventiva, Desconsideração da Personalidade Jurídica, ITD...")
+                
+                # Nível 3: Comentário do Aluno sobre o erro
+                comentario_erro = st.text_area("3️⃣ Nível - Comentário / Fundamento do Erro:", placeholder="O que pegou na questão? Qual o entendimento do STJ/STF ou dispositivo legal esquecido?")
                 
                 salvar_fc = st.form_submit_button("Salvar Flashcard 💾")
 
                 if salvar_fc:
-                    if pergunta_fc.strip() and resposta_fc.strip() and supabase:
+                    if assunto_livre.strip() and comentario_erro.strip() and supabase:
                         try:
                             dados_fc = {
                                 "user_id": st.session_state["user"].id,
-                                "disciplina": disc_fc,
-                                "pergunta_erro": pergunta_fc,
-                                "resposta_fundamento": resposta_fc
+                                "disciplina": disc_escolhida,
+                                "assunto": assunto_livre,
+                                "pergunta_erro": assunto_livre, # mantido por compatibilidade
+                                "resposta_fundamento": comentario_erro
                             }
                             supabase.table("flashcards_erros").insert(dados_fc).execute()
-                            st.success("🧠 Flashcard guardado com sucesso!")
+                            st.success("🧠 Flashcard de 3 níveis guardado com sucesso!")
                             st.rerun()
                         except Exception as e:
                             st.error(f"Erro ao salvar flashcard: {e}")
                     else:
-                        st.error("Preencha todos os campos obrigatórios.")
+                        st.error("Preencha o Assunto e o Comentário do erro.")
 
         st.markdown("---")
-        st.subheader("📚 Meus Flashcards Cadastrados")
+        st.subheader("📚 Consulta de Flashcards Cadastrados")
 
         if supabase:
             try:
@@ -249,19 +254,21 @@ elif menu_principal == "🧠 Flashcards & Caderno de Erros":
                 lista_fc = res_fc.data
 
                 if not lista_fc:
-                    st.info("📭 Nenhum flashcard cadastrado ainda. Use o formulário acima para adicionar os seus erros e revisões!")
+                    st.info("📭 Nenhum flashcard cadastrado ainda. Use o formulário acima para registrar seus erros!")
                 else:
                     df_fc = pd.DataFrame(lista_fc)
                     
-                    filtro_fc_disc = st.selectbox("Filtrar Flashcards por Disciplina:", ["Todas"] + list(df_fc["disciplina"].unique()))
-                    if filtro_fc_disc != "Todas":
-                        df_fc_filtrado = df_fc[df_fc["disciplina"] == filtro_fc_disc]
+                    # Filtros de consulta
+                    filtro_disc = st.selectbox("Filtrar por Disciplina:", ["Todas"] + list(df_fc["disciplina"].unique()))
+                    if filtro_disc != "Todas":
+                        df_fc_filtrado = df_fc[df_fc["disciplina"] == filtro_disc]
                     else:
                         df_fc_filtrado = df_fc
 
                     for idx, row in df_fc_filtrado.iterrows():
-                        with st.expander(f"📌 [{row['disciplina']}] {row['pergunta_erro']}"):
-                            st.markdown(f"**Fundamento / Resposta Correta:**\n> {row['resposta_fundamento']}")
+                        assunto_txt = row.get('assunto', 'Geral')
+                        with st.expander(f"📌 [{row['disciplina']}] — Assunto: {assunto_txt}"):
+                            st.markdown(f"**Comentário / Fundamento do Erro:**\n> {row['resposta_fundamento']}")
                             
                             if st.button("🗑️ Excluir Flashcard", key=f"del_fc_{row['id']}"):
                                 try:
