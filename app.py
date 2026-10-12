@@ -394,4 +394,72 @@ elif menu_principal == "Executar Circuito":
 elif menu_principal == "Painel de Desempenho":
   st.subheader(f"Painel de Evolução — {nome_aluno}")
 
-  if st.
+  if st.session_state["user"] is None:
+    st.warning("Faça login na barra lateral para carregar seu histórico.")
+  else:
+    if supabase:
+      try:
+        res = (
+            supabase.table("historico_estudos")
+            .select("*")
+            .eq("user_id", st.session_state["user"].id)
+            .execute()
+        )
+        dados = res.data
+
+        if not dados:
+          st.info("Nenhum bloco registrado ainda.")
+        else:
+          df = pd.DataFrame(dados)
+          total_feitas = df["feitas"].sum()
+          total_acertos = df["acertos"].sum()
+          aproveitamento_geral = (
+              (total_acertos / total_feitas) * 100 if total_feitas > 0 else 0
+          )
+
+          c1, c2, c3 = st.columns(3)
+          c1.metric("Questões Resolvidas", f"{total_feitas:,}")
+          c2.metric("Total de Acertos", f"{total_acertos:,}")
+          c3.metric("Rendimento Geral", f"{aproveitamento_geral:.1f}%")
+
+          st.markdown("---")
+          st.subheader("Aproveitamento Por Disciplina")
+          resumo_disc = (
+              df.groupby("disciplina")[["feitas", "acertos"]]
+              .sum()
+              .reset_index()
+          )
+          resumo_disc["Aproveitamento (%)"] = (
+              resumo_disc["acertos"] / resumo_disc["feitas"] * 100
+          ).round(1)
+          st.dataframe(resumo_disc, use_container_width=True)
+
+      except Exception as e:
+        st.error(f"Erro ao carregar painel: {e}")
+
+
+# ==========================================
+# TELA: FLASHCARDS E RECORRÊNCIAS
+# ==========================================
+elif menu_principal == "Flashcards e Recorrências":
+  st.subheader(f"Caderno de Erros — {nome_aluno}")
+
+  if st.session_state["user"] is None:
+    st.warning("Faça login na barra lateral para salvar flashcards na nuvem.")
+  else:
+    with st.expander("Adicionar Novo Flashcard", expanded=False):
+      with st.form("form_fc"):
+        disc_escolhida = st.selectbox(
+            "Disciplina:", st.session_state.disciplinas
+        )
+        assunto_livre = st.text_input("Assunto:")
+        comentario_erro = st.text_area("Fundamento / Comentário do Erro:")
+
+        enviar_fc = st.form_submit_button("Salvar Flashcard")
+
+      if enviar_fc:
+        if assunto_livre.strip() and comentario_erro.strip() and supabase:
+          try:
+            dados_fc = {
+                "user_id": st.session_state["user"].id,
+                "disciplina": disc_escolhida,
