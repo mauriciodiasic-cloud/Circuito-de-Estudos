@@ -5,7 +5,7 @@ import streamlit as st
 # ==========================================
 # CONFIGURAÇÃO DA PÁGINA
 # ==========================================
-st.set_page_config(page_title="Radar Jurídico", page_icon="📰", layout="wide")
+st.set_page_config(page_title="Circuito de Estudos", page_icon="⚖️", layout="wide")
 
 # ==========================================
 # MENU PRINCIPAL
@@ -22,10 +22,38 @@ opcoes_menu = [
 menu_principal = st.sidebar.radio("Navegue pelas telas:", opcoes_menu)
 
 # ==========================================
+# TELA: 🏠 INÍCIO
+# ==========================================
+if "Início" in menu_principal:
+  st.title("🏠 Página Inicial")
+  st.write("Bem-vindo ao seu painel central de estudos e rotina!")
+  # Coloque aqui o conteúdo da sua tela de Início
+
+# ==========================================
+# TELA: 🏋️‍♂️ EXECUTAR CIRCUITO
+# ==========================================
+elif "Executar Circuito" in menu_principal:
+  st.title("🏋️‍♂️ Executar Circuito de Estudos")
+  st.write("Aqui você gerencia e executa as suas rodadas de estudo.")
+
+# ==========================================
+# TELA: 📊 PAINEL DE DESEMPENHO
+# ==========================================
+elif "Painel de Desempenho" in menu_principal:
+  st.title("📊 Painel de Desempenho")
+  st.write("Acompanhe as suas estatísticas e evolução.")
+
+# ==========================================
+# TELA: 🧠 FLASHCARDS & RECORRÊNCIAS
+# ==========================================
+elif "Flashcards & Recorrências" in menu_principal:
+  st.title("🧠 Flashcards & Recorrências")
+  st.write("Reveja os seus cartões de memória e pontos recorrentes.")
+
+# ==========================================
 # TELA: 📰 RADAR JURÍDICO & NOTÍCIAS
 # ==========================================
-# Verificação flexível (funciona mesmo se houver pequena diferença no emoji ou traço)
-if "Radar Jurídico" in menu_principal:
+elif "Radar Jurídico" in menu_principal:
   nome_aluno = "Mauricio"  # Ajuste conforme sua lógica
   st.title(f"📰 Radar Jurídico & Jurisprudência — {nome_aluno}")
   st.caption(
@@ -37,9 +65,7 @@ if "Radar Jurídico" in menu_principal:
       ["🏛️ Notícias STF", "⚖️ Notícias STJ", "🔍 Busca por Tema"]
   )
 
-  # --------------------------------------
   # 1. ABA STF
-  # --------------------------------------
   with tab_stf:
     st.subheader("📌 Últimas do Supremo Tribunal Federal (STF)")
     feed_stf_url = "https://portal.stf.jus.br/rss/noticias.xml"
@@ -64,9 +90,7 @@ if "Radar Jurídico" in menu_principal:
     except Exception as e:
       st.error(f"Erro ao carregar o feed do STF: {e}")
 
-  # --------------------------------------
   # 2. ABA STJ
-  # --------------------------------------
   with tab_stj:
     st.subheader("📌 Últimas do Superior Tribunal de Justiça (STJ)")
     feed_stj_url = "https://www.stj.jus.br/sites/portalp/rss/noticias.xml"
@@ -91,9 +115,7 @@ if "Radar Jurídico" in menu_principal:
     except Exception as e:
       st.error(f"Erro ao carregar o feed do STJ: {e}")
 
-  # --------------------------------------
   # 3. ABA BUSCA POR TEMA
-  # --------------------------------------
   with tab_busca:
     st.subheader("🔍 Filtrar Notícias por Palavra-Chave")
     termo_busca = st.text_input(
@@ -130,8 +152,13 @@ if "Radar Jurídico" in menu_principal:
         st.info("Nenhuma notícia encontrada com este termo.")
 
 # ==========================================
-# OUTRAS TELAS (FALLBACK)
+# TELA: ⚙️ GERENCIAR DISCIPLINAS
 # ==========================================
+elif "Gerenciar Disciplinas" in menu_principal:
+  st.title("⚙️ Gerenciar Disciplinas")
+  st.write("Adicione ou edite as disciplinas do seu ciclo de estudos.")
+
+# Caso ocorra alguma exceção desconhecida
 else:
   st.title(menu_principal)
   st.info(f"Conteúdo da tela **{menu_principal}** em desenvolvimento.")
