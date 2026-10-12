@@ -64,21 +64,65 @@ def init_supabase():
 
 supabase: Client = init_supabase()
 
+# --- DISCIPLINAS PADRÃO ---
+DISCIPLINAS_PADRAO = [
+    "Direito Constitucional",
+    "Direito Administrativo",
+    "Processo Civil",
+    "Direito Civil",
+    "Direito Penal",
+    "Processo Penal",
+    "E.C.A.",
+    "Execução Penal",
+    "Direitos Humanos",
+    "Empresarial",
+    "Direito do Consumidor",
+]
+
+
+# --- FUNÇÕES DE PERSISTÊNCIA DE PREFERÊNCIAS ---
+def carregar_preferencias_usuario(user_id):
+  if not supabase:
+    return None
+  try:
+    res = (
+        supabase.table("preferencias_usuario")
+        .select("*")
+        .eq("user_id", user_id)
+        .execute()
+    )
+    if res.data and len(res.data) > 0:
+      return res.data[0]
+  except Exception:
+    pass
+  return None
+
+
+def salvar_preferencias_usuario():
+  if not supabase or st.session_state.get("user") is None:
+    return
+  user_id = st.session_state["user"].id
+  dados_prefs = {
+      "user_id": user_id,
+      "disciplinas": st.session_state.disciplinas,
+      "series_concluidas": st.session_state.series_concluidas,
+      "indice_atual": st.session_state.indice_atual,
+  }
+  try:
+    supabase.table("preferencias_usuario").upsert(dados_prefs).execute()
+  except Exception:
+    pass
+
+
 # --- INICIALIZAÇÃO SEGURA DO SESSION STATE ---
+if "user" not in st.session_state:
+  st.session_state["user"] = None
+
+if "nome_preferido" not in st.session_state:
+  st.session_state["nome_preferido"] = "Concursando"
+
 if "disciplinas" not in st.session_state:
-  st.session_state.disciplinas = [
-      "Direito Constitucional",
-      "Direito Administrativo",
-      "Processo Civil",
-      "Direito Civil",
-      "Direito Penal",
-      "Processo Penal",
-      "E.C.A.",
-      "Execução Penal",
-      "Direitos Humanos",
-      "Empresarial",
-      "Direito do Consumidor",
-  ]
+  st.session_state.disciplinas = DISCIPLINAS_PADRAO.copy()
 
 if "indice_atual" not in st.session_state:
   st.session_state.indice_atual = 0
@@ -88,13 +132,7 @@ if "series_concluidas" not in st.session_state:
       d: 1 for d in st.session_state.disciplinas
   }
 
-if "user" not in st.session_state:
-  st.session_state["user"] = None
-
-if "nome_preferido" not in st.session_state:
-  st.session_state["nome_preferido"] = "Concursando"
-
-# --- RECUPERAÇÃO AUTOMÁTICA DE SESSÃO DO SUPABASE ---
+# --- RECUPERAÇÃO AUTOMÁTICA DE SESSÃO E PREFERÊNCIAS ---
 if supabase and st.session_state["user"] is None:
   try:
     current_session = supabase.auth.get_session()
@@ -107,6 +145,17 @@ if supabase and st.session_state["user"] is None:
           "full_name",
           getattr(current_session.user, "email", "Concursando").split("@")[0],
       )
+
+      # Carregar dados salvos do usuário na nuvem
+      prefs = carregar_preferencias_usuario(current_session.user.id)
+      if prefs:
+        st.session_state.disciplinas = prefs.get(
+            "disciplinas", DISCIPLINAS_PADRAO.copy()
+        )
+        st.session_state.series_concluidas = prefs.get(
+            "series_concluidas", {d: 1 for d in st.session_state.disciplinas}
+        )
+        st.session_state.indice_atual = prefs.get("indice_atual", 0)
   except Exception:
     pass
 
@@ -183,6 +232,18 @@ else:
           )
           st.session_state["nome_preferido"] = nome_usuario
 
+          # Carregar preferências logo após o login
+          prefs = carregar_preferencias_usuario(res.user.id)
+          if prefs:
+            st.session_state.disciplinas = prefs.get(
+                "disciplinas", DISCIPLINAS_PADRAO.copy()
+            )
+            st.session_state.series_concluidas = prefs.get(
+                "series_concluidas",
+                {d: 1 for d in st.session_state.disciplinas},
+            )
+            st.session_state.indice_atual = prefs.get("indice_atual", 0)
+
           st.sidebar.success(f"Bem-vindo(a) de volta, {nome_usuario}!")
           st.rerun()
         except Exception:
@@ -207,6 +268,7 @@ else:
       supabase.auth.sign_out()
       st.session_state["user"] = None
       st.session_state["nome_preferido"] = "Concursando"
+      st.session_state.disciplinas = DISCIPLINAS_PADRAO.copy()
       st.rerun()
 
 # --- FRASES MOTIVACIONAIS ---
@@ -310,6 +372,7 @@ elif menu_principal == "Executar Circuito":
       st.session_state.indice_atual = (idx + 1) % len(
           st.session_state.disciplinas
       )
+      salvar_preferencias_usuario()
       st.rerun()
 
     st.markdown("---")
@@ -420,7 +483,8 @@ else:
   st.subheader("Gerenciar Disciplinas e Ordem do Circuito")
   st.markdown(
       "Adicione novas matérias ou altere a ordem em que aparecem no circuito"
-      " usando os botões **Subir** e **Descer**."
+      " usando os botões **Subir** e **Descer**. Todas as alterações são salvas"
+      " automaticamente na sua conta."
   )
 
   with st.expander("Adicionar Nova Disciplina", expanded=False):
@@ -429,8 +493,10 @@ else:
       nova_limpa = nova_disc.strip()
       if nova_limpa not in st.session_state.disciplinas:
         st.session_state.disciplinas.append(nova_limpa)
-        st.session_state.series_concluidas[nova_limpa] = 1
-        st.success("Disciplina adicionada com sucesso!")
+        if nova_limpa not in st.session_state.series_concluidas:
+          st.session_state.series_concluidas[nova_limpa] = 1
+        salvar_preferencias_usuario()
+        st.success("Disciplina adicionada e salva com sucesso!")
         st.rerun()
       else:
         st.warning("Esta disciplina já consta no circuito.")
@@ -457,6 +523,7 @@ else:
               st.session_state.disciplinas[idx - 1],
               st.session_state.disciplinas[idx],
           )
+          salvar_preferencias_usuario()
           st.rerun()
 
       if c_descer.button("Descer ⬇️", key=f"down_{idx}"):
@@ -467,6 +534,7 @@ else:
               st.session_state.disciplinas[idx + 1],
               st.session_state.disciplinas[idx],
           )
+          salvar_preferencias_usuario()
           st.rerun()
 
       if c_remover.button("Remover 🗑️", key=f"rem_{idx}"):
@@ -477,4 +545,5 @@ else:
           )
         else:
           st.session_state.indice_atual = 0
+        salvar_preferencias_usuario()
         st.rerun()
